@@ -30,7 +30,7 @@ Que vous soyez à la recherche d'une soirée animée, d'une activité culturelle
 | <img src="https://img.shields.io/badge/Laravel-FF2D20?style=for-the-badge&logo=laravel&logoColor=white"/>| Framework PHP pour applications web |
 | <img src="https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white"/>| Système de gestion de base de données relationnelle |
 | <img src="https://img.shields.io/badge/Claude-D97757?style=for-the-badge&logo=claude&logoColor=white"/>| Assistant IA pour l'aide au développement |
-|
+
 
 ## Maquette :
 
