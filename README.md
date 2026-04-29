@@ -25,4 +25,4 @@ Que vous soyez à la recherche d'une soirée animée, d'une activité culturelle
 
 ## Maquette :
 
-![Maquette](https://github.com/ArthurPoncin/eve-nantes/tree/main/image/MaquetteSunSet.png)
+![Maquette](https://github.com/ArthurPoncin/eve-nantes/tree/main)
