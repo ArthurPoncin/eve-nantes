@@ -1,7 +1,7 @@
-# NantesVibes — Plan Services & Logique Métier
+# NOCTAMBULE — Plan Services & Logique Métier
 
 > Ce document est destiné au développeur en charge des **services, jobs et cache Redis**.
-> Stack : **PHP 8.3 + Laravel 11**.
+> Stack : **PHP 8.3 + Laravel 12**.
 >
 > Prérequis : le backend de base (migrations, modèles, auth, routes, Horizon installé)
 > doit être fourni par l'autre développeur backend (voir `PLAN_BACKEND.md`).
@@ -15,52 +15,54 @@
 3. [Pattern commun — Cache::remember](#3-pattern-commun)
 4. [WeatherService](#4-weatherservice)
 5. [EventService](#5-eventservice)
-6. [PlaceService + Trending Redis](#6-placeservice)
-7. [SpotifyService + Token OAuth2](#7-spotifyservice)
+6. [VenueService + Affluence + Trending Redis](#6-venueservice)
+7. [PlaceService (Foursquare — complémentaire)](#7-placeservice)
 8. [TransportService](#8-transportservice)
-9. [AIService (Mistral)](#9-aiservice)
+9. [AIService — multi-provider](#9-aiservice)
 10. [MailService](#10-mailservice)
-11. [SoireeService — Orchestrateur](#11-soireeservice)
-12. [Jobs Horizon](#12-jobs-horizon)
-13. [Scheduler](#13-scheduler)
-14. [Binding dans AppServiceProvider](#14-binding-appserviceprovider)
-15. [Checklist](#15-checklist)
+11. [BadgeService — gamification](#11-badgeservice)
+12. [SoireeService — Orchestrateur](#12-soireeservice)
+13. [Jobs Horizon](#13-jobs-horizon)
+14. [Scheduler](#14-scheduler)
+15. [Binding dans AppServiceProvider](#15-binding-appserviceprovider)
+16. [Checklist](#16-checklist)
 
 ---
 
 ## 1. Vue d'ensemble
 
-Tu implémentes la couche **Services** : toute la logique métier et les intégrations avec
-les 7 APIs externes. Les controllers (écrits par l'autre dev) t'injectent leurs dépendances
-via le container IoC de Laravel.
+Tu implémentes la couche **Services** : logique métier et intégrations avec les APIs externes.
+Les controllers (écrits par l'autre dev) t'injectent leurs dépendances via le container IoC de Laravel.
 
 ```
 Controller (autre dev)
      │  injection automatique Laravel
      ▼
-┌──────────────────────────────────────────┐
-│           Ta partie                      │
-│                                          │
-│  SoireeService  ←── orchestrateur        │
-│    │                                     │
-│    ├── WeatherService   → OpenWeatherMap │
-│    ├── EventService     → OpenAgenda     │
-│    ├── PlaceService     → Foursquare     │
-│    ├── SpotifyService   → Spotify API    │
-│    ├── TransportService → Navitia        │
-│    ├── AIService        → Mistral AI     │
-│    └── MailService      → Mailjet        │
-│                                          │
-│  Jobs Horizon                            │
-│    ├── GenerateAINarrativeJob  (queue:ai)│
-│    ├── SendSoireeEmailJob  (queue:notif) │
-│    └── PrefetchWeatherJob  (scheduled)   │
-│                                          │
-│  Redis patterns                          │
-│    ├── cache-aside (Cache::remember)     │
-│    ├── token Spotify                     │
-│    └── trending sorted set              │
-└──────────────────────────────────────────┘
+┌──────────────────────────────────────────────┐
+│           Ta partie                          │
+│                                              │
+│  SoireeService  ←── orchestrateur            │
+│    │                                         │
+│    ├── WeatherService     → OpenWeatherMap   │
+│    ├── EventService       → OpenAgenda       │
+│    ├── VenueService       → BDD locale       │
+│    ├── PlaceService       → Foursquare       │
+│    ├── TransportService   → Navitia / TAN    │
+│    ├── AIService          → Mistral|Gemma|Ollama │
+│    ├── MailService        → Mailjet          │
+│    └── BadgeService       → BDD locale       │
+│                                              │
+│  Jobs Horizon                                │
+│    ├── GenerateAINarrativeJob (queue:ai)     │
+│    ├── SendSoireeEmailJob    (queue:notif)   │
+│    ├── CheckBadgesJob        (queue:default) │
+│    └── PrefetchWeatherJob    (scheduled)     │
+│                                              │
+│  Redis patterns                              │
+│    ├── cache-aside (Cache::remember)         │
+│    ├── crowd estimation                      │
+│    └── trending sorted set                   │
+└──────────────────────────────────────────────┘
 ```
 
 ---
@@ -69,8 +71,8 @@ Controller (autre dev)
 
 ### Ce que l'autre dev te fournit
 
-- Les **modèles** : `User`, `Soiree`, `Favorite`, `Review`
-- Les **clés de config** dans `config/services.php` (clés API)
+- Les **modèles** : `User`, `Venue`, `Event`, `Soiree`, `Favorite`, `Review`, `Badge`, `UserBadge`
+- Les **clés de config** dans `config/services.php` (clés API + bloc `ai`)
 - **Horizon installé** et configuré (`config/horizon.php`)
 - Les **controllers** avec les méthodes vides qui t'attendent
 
@@ -79,13 +81,16 @@ Controller (autre dev)
 Les **signatures publiques** de tes services, qu'il injecte dans ses controllers :
 
 ```php
-// À communiquer à l'autre dev pour qu'il câble les controllers
-
 WeatherService::getCurrent(): array
-EventService::getByMood(string $humeur, string $date): array
-PlaceService::getByMood(string $humeur): array
-SpotifyService::getPlaylistByMood(string $humeur): array
+EventService::getByMood(string $mood, string $date): array
+VenueService::list(array $filters = []): array
+VenueService::getBySlug(string $slug): array
+VenueService::getCrowd(string $slug): array              // ['percent' => 87, 'label' => 'Bondé']
+PlaceService::getNearby(float $lat, float $lng, string $category): array
 TransportService::getJourney(string $from, string $to, string $datetime): array
+TransportService::getNextPassages(string $stopId): array
+AIService::generateNarrative(array $context): string
+BadgeService::forUser(User $user): array                 // [unlocked, locked]
 SoireeService::generate(array $params, ?User $user): array
 ```
 
@@ -94,6 +99,7 @@ Et les **constructeurs des jobs**, pour qu'il puisse les dispatcher :
 ```php
 GenerateAINarrativeJob::__construct(Soiree $soiree)
 SendSoireeEmailJob::__construct(Soiree $soiree, array $recipients)
+CheckBadgesJob::__construct(User $user)
 ```
 
 ---
@@ -109,7 +115,7 @@ Cache::remember(string $key, $ttl, Closure $callback): mixed
 
 // Exemples
 Cache::remember('cache:weather:nantes', now()->addMinutes(10), fn() => /* appel API */);
-Cache::remember("cache:events:{$date}:{$humeur}", now()->addMinutes(30), fn() => /* ... */);
+Cache::remember("cache:events:{$date}:{$mood}", now()->addMinutes(30), fn() => /* ... */);
 
 // Invalider manuellement
 Cache::forget('cache:weather:nantes');
@@ -123,13 +129,13 @@ Cache::has('cache:weather:nantes');
 | Service | Clé | TTL |
 |---|---|---|
 | WeatherService | `cache:weather:nantes` | 10 min |
-| EventService | `cache:events:{date}:{humeur}` | 30 min |
-| PlaceService | `cache:places:{cat}:{zone}` | 1h |
-| SpotifyService | `cache:spotify:{humeur}` | 2h |
-| SpotifyService (token) | `token:spotify` | 3500s |
+| EventService | `cache:events:{date}:{mood}` | 30 min |
+| VenueService | `cache:venue:crowd:{slug}` | 5 min |
+| VenueService (trending) | `trending:spots` | pas de TTL |
+| PlaceService (Foursquare) | `cache:places:{cat}:{zone}` | 1 h |
+| TransportService | `cache:tan:{stopId}` | 60 s |
 | TransportService | `cache:transport:{from}:{to}:{dt}` | 5 min |
-| AIService | `cache:ai:{md5(inputs)}` | 1h |
-| trending | `trending:spots` | pas de TTL |
+| AIService | `cache:ai:{md5(inputs)}` | 1 h |
 
 ---
 
@@ -155,9 +161,9 @@ class WeatherService
             return [
                 'temp'        => $data['main']['temp'],
                 'feels_like'  => $data['main']['feels_like'],
-                'description' => $data['weather'][0]['description'],
+                'condition'   => $data['weather'][0]['description'],
                 'icon'        => $data['weather'][0]['icon'],
-                'wind_speed'  => $data['wind']['speed'],
+                'wind'        => $data['wind']['speed'],
                 'humidity'    => $data['main']['humidity'],
             ];
         });
@@ -176,25 +182,25 @@ class WeatherService
 // app/Services/EventService.php
 class EventService
 {
-    // Mapping humeur → mots-clés de recherche
+    // Mapping mood → mots-clés de recherche
     private array $moodKeywords = [
-        'chill'      => 'exposition,cinema,musee',
-        'festif'     => 'concert,festival,fete',
-        'romantique' => 'theatre,diner,spectacle',
-        'culturel'   => 'conference,atelier,exposition',
+        'festif'     => 'concert,festival,fete,club',
+        'chill'      => 'cocktail,bar,jazz,acoustique',
+        'decouverte' => 'exposition,confidentiel,electro',
+        'afterwork'  => 'afterwork,bar,quiz',
     ];
 
-    public function getByMood(string $humeur, string $date): array
+    public function getByMood(string $mood, string $date): array
     {
-        $cacheKey = "cache:events:{$date}:{$humeur}";
+        $cacheKey = "cache:events:{$date}:{$mood}";
 
-        return Cache::remember($cacheKey, now()->addMinutes(30), function () use ($humeur, $date) {
+        return Cache::remember($cacheKey, now()->addMinutes(30), function () use ($mood, $date) {
             $response = Http::get('https://api.openagenda.com/v2/events', [
                 'key'             => config('services.openagenda.key'),
                 'size'            => 5,
                 'sort'            => 'timings.begin',
                 'timings[gte]'    => $date,
-                'keyword'         => $this->moodKeywords[$humeur] ?? '',
+                'keyword'         => $this->moodKeywords[$mood] ?? '',
                 'location[city]'  => 'Nantes',
             ])->throw()->json();
 
@@ -214,35 +220,150 @@ class EventService
 
 ---
 
-## 6. PlaceService
+## 6. VenueService
+
+> Service principal pour les venues. La source de vérité est la **BDD locale**
+> (les 6 venues seedés). Foursquare est utilisé séparément (cf. `PlaceService`).
+
+```php
+// app/Services/VenueService.php
+class VenueService
+{
+    public function list(array $filters = []): array
+    {
+        return Venue::query()
+            ->when($filters['mood']     ?? null, fn($q, $v) => $q->where('mood', $v))
+            ->when($filters['district'] ?? null, fn($q, $v) => $q->where('district', $v))
+            ->when($filters['type']     ?? null, fn($q, $v) => $q->where('type', $v))
+            ->orderBy('name')
+            ->get()
+            ->map(fn(Venue $v) => $this->present($v))
+            ->all();
+    }
+
+    public function getBySlug(string $slug): array
+    {
+        $venue = Venue::with(['tonight', 'reviews'])->where('slug', $slug)->firstOrFail();
+
+        // Track pour le trending sorted set
+        Redis::zincrby('trending:spots', 1, "{$venue->id}:{$venue->name}");
+
+        return [
+            ...$this->present($venue),
+            'tonight' => $venue->tonight ? [
+                'id'        => $venue->tonight->id,
+                'title'     => $venue->tonight->title,
+                'starts_at' => $venue->tonight->starts_at,
+                'ends_at'   => $venue->tonight->ends_at,
+            ] : null,
+            'reviews_count' => $venue->reviews->count(),
+            'rating'        => round($venue->reviews->avg('rating') ?? 0, 1),
+            'crowd'         => $this->getCrowd($slug),
+        ];
+    }
+
+    public function getCrowd(string $slug): array
+    {
+        return Cache::remember("cache:venue:crowd:{$slug}", now()->addMinutes(5), function () use ($slug) {
+            $venue = Venue::where('slug', $slug)->firstOrFail();
+            return $this->estimateCrowd($venue);
+        });
+    }
+
+    /**
+     * Affluence estimée — déterministe pour la démo.
+     * Combine : heure du jour + jour de la semaine + popularité (rating + tags).
+     */
+    private function estimateCrowd(Venue $venue): array
+    {
+        $hour    = now()->hour;
+        $weekend = in_array(now()->dayOfWeek, [5, 6]); // ven/sam
+
+        // Courbe d'affluence par type
+        $base = match ($venue->type) {
+            'club'  => $hour >= 23 || $hour < 5 ? 80 : ($hour >= 21 ? 50 : 15),
+            'bar'   => $hour >= 19 && $hour < 2 ? 65 : 25,
+            'salle' => $hour >= 20 && $hour < 1 ? 70 : 20,
+            'pub'   => $hour >= 18 && $hour < 1 ? 55 : 30,
+        };
+
+        $bonus = $weekend ? 15 : 0;
+        $rating = round(($venue->reviews()->avg('rating') ?? 4.5) * 4);   // 0–20
+        $percent = min(99, $base + $bonus + ($rating - 18));
+
+        $label = match (true) {
+            $percent >= 85 => 'Bondé',
+            $percent >= 65 => 'Affluence forte',
+            $percent >= 45 => 'Animé',
+            default        => 'Confortable',
+        };
+
+        return ['percent' => (int) $percent, 'label' => $label];
+    }
+
+    public function getTopSpots(int $limit = 10): array
+    {
+        $raw = Redis::zrevrange('trending:spots', 0, $limit - 1, 'WITHSCORES');
+
+        $result = [];
+        foreach (array_chunk($raw, 2) as [$key, $score]) {
+            [$id, $name] = explode(':', $key, 2);
+            $result[] = ['id' => $id, 'name' => $name, 'views' => (int) $score];
+        }
+
+        return $result;
+    }
+
+    private function present(Venue $v): array
+    {
+        return [
+            'id'             => $v->id,
+            'slug'           => $v->slug,
+            'name'           => $v->name,
+            'type'           => $v->type,
+            'district'       => $v->district,
+            'mood'           => $v->mood,
+            'music'          => $v->music,
+            'price'          => $v->price,
+            'cover'          => $v->cover,
+            'time_open'      => $v->time_open,
+            'lat'            => (float) $v->lat,
+            'lng'            => (float) $v->lng,
+            'transport_hint' => $v->transport_hint,
+            'photo_url'      => $v->photo_url,
+            'tags'           => $v->tags,
+        ];
+    }
+}
+```
+
+---
+
+## 7. PlaceService
 
 **API** : Foursquare Places — `GET /v3/places/search`
 **Clé** : `config('services.foursquare.key')`
+
+> Foursquare est utilisé en **complément** du catalogue venues local : par exemple,
+> trouver un café d'after à proximité d'un venue, ou suggérer des lieux pour
+> élargir la balade. Ce n'est **pas** la source primaire des venues.
 
 ```php
 // app/Services/PlaceService.php
 class PlaceService
 {
-    // Foursquare category IDs
-    private array $moodCategories = [
-        'chill'      => '13065',   // Café
-        'festif'     => '13003',   // Bar
-        'romantique' => '13064',   // Restaurant gastronomique
-        'culturel'   => '10000',   // Arts & Entertainment
-    ];
-
-    public function getByMood(string $humeur, string $zone = 'Nantes'): array
+    public function getNearby(float $lat, float $lng, string $category = '13003'): array
     {
-        $cat      = $this->moodCategories[$humeur] ?? '13003';
-        $cacheKey = "cache:places:{$cat}:{$zone}";
+        $cacheKey = "cache:places:{$category}:{$lat},{$lng}";
 
-        return Cache::remember($cacheKey, now()->addHour(), function () use ($cat, $zone) {
+        return Cache::remember($cacheKey, now()->addHour(), function () use ($lat, $lng, $category) {
             $items = Http::withToken(config('services.foursquare.key'))
                 ->get('https://api.foursquare.com/v3/places/search', [
-                    'near'       => $zone . ',FR',
-                    'categories' => $cat,
+                    'll'         => "{$lat},{$lng}",
+                    'radius'     => 500,
+                    'categories' => $category,
                     'limit'      => 5,
-                    'fields'     => 'name,location,rating,categories,hours,photos',
+                    'fields'     => 'name,location,rating,categories,hours,photos,geocodes',
                 ])->throw()->json('results');
 
             return collect($items)->map(fn($p) => [
@@ -259,110 +380,22 @@ class PlaceService
 }
 ```
 
-### Trending Sorted Set
-
-À chaque fois qu'un lieu est affiché, incrémente son score dans Redis :
-
-```php
-// Appeler dans PlaceService::getByMood() ou depuis le controller
-public function trackView(string $placeId, string $placeName): void
-{
-    Redis::zincrby('trending:spots', 1, "{$placeId}:{$placeName}");
-}
-
-// Récupérer le top 10 (utilisé dans StatsController)
-public function getTopSpots(int $limit = 10): array
-{
-    $raw = Redis::zrevrange('trending:spots', 0, $limit - 1, 'WITHSCORES');
-
-    // $raw = ['id1:nom1', score1, 'id2:nom2', score2, ...]
-    $result = [];
-    foreach (array_chunk($raw, 2) as [$key, $score]) {
-        [$id, $name] = explode(':', $key, 2);
-        $result[] = ['id' => $id, 'name' => $name, 'views' => (int) $score];
-    }
-
-    return $result;
-}
-```
-
----
-
-## 7. SpotifyService
-
-**API** : Spotify Web API (OAuth2 Client Credentials)
-**Clés** : `config('services.spotify.client_id')` / `client_secret`
-
-Le token Spotify est stocké dans Redis avec TTL calqué sur `expires_in`.
-
-```php
-// app/Services/SpotifyService.php
-class SpotifyService
-{
-    private array $moodQueries = [
-        'chill'      => 'lofi chill',
-        'festif'     => 'party hits',
-        'romantique' => 'romantic jazz',
-        'culturel'   => 'classical focus',
-    ];
-
-    private function getAccessToken(): string
-    {
-        // Cache::remember évite un appel Spotify à chaque requête
-        return Cache::remember('token:spotify', now()->addSeconds(3500), function () {
-            $response = Http::asForm()
-                ->withBasicAuth(
-                    config('services.spotify.client_id'),
-                    config('services.spotify.client_secret')
-                )
-                ->post('https://accounts.spotify.com/api/token', [
-                    'grant_type' => 'client_credentials',
-                ])->throw()->json();
-
-            return $response['access_token'];
-        });
-    }
-
-    public function getPlaylistByMood(string $humeur): array
-    {
-        return Cache::remember("cache:spotify:{$humeur}", now()->addHours(2), function () use ($humeur) {
-            $query = $this->moodQueries[$humeur] ?? $humeur;
-
-            $items = Http::withToken($this->getAccessToken())
-                ->get('https://api.spotify.com/v1/search', [
-                    'q'      => $query,
-                    'type'   => 'playlist',
-                    'market' => 'FR',
-                    'limit'  => 3,
-                ])->throw()->json('playlists.items');
-
-            return collect($items)->map(fn($p) => [
-                'id'          => $p['id'],
-                'name'        => $p['name'],
-                'description' => $p['description'],
-                'image'       => $p['images'][0]['url'] ?? null,
-                'url'         => $p['external_urls']['spotify'],
-                'tracks'      => $p['tracks']['total'],
-            ])->all();
-        });
-    }
-}
-```
-
 ---
 
 ## 8. TransportService
 
-**API** : Navitia — `GET /v1/coverage/fr-nw/journeys`
-**Clé** : `config('services.navitia.key')`
+**API** : Navitia (itinéraires) + TAN OpenData (temps réel par arrêt)
 
 ```php
 // app/Services/TransportService.php
 class TransportService
 {
+    /**
+     * Itinéraire complet entre deux points.
+     * `from`/`to` au format "lat;lng" (ex: "47.2184;-1.5536").
+     */
     public function getJourney(string $from, string $to, string $datetime): array
     {
-        // from/to = "lat;lng" (ex: "47.2184;-1.5536")
         $cacheKey = "cache:transport:{$from}:{$to}:{$datetime}";
 
         return Cache::remember($cacheKey, now()->addMinutes(5), function () use ($from, $to, $datetime) {
@@ -370,20 +403,38 @@ class TransportService
                 ->get('https://api.navitia.io/v1/coverage/fr-nw/journeys', [
                     'from'     => $from,
                     'to'       => $to,
-                    'datetime' => $datetime,     // format : YYYYMMDDTHHmmss
+                    'datetime' => $datetime,
                     'count'    => 3,
                 ])->throw()->json();
 
             return collect($data['journeys'] ?? [])->map(fn($j) => [
-                'duration'    => $j['duration'],
-                'departure'   => $j['departure_date_time'],
-                'arrival'     => $j['arrival_date_time'],
-                'sections'    => collect($j['sections'])->map(fn($s) => [
-                    'mode'  => $s['display_informations']['physical_mode'] ?? $s['type'],
-                    'line'  => $s['display_informations']['label'] ?? null,
-                    'from'  => $s['from']['name'] ?? null,
-                    'to'    => $s['to']['name'] ?? null,
+                'duration'  => $j['duration'],
+                'departure' => $j['departure_date_time'],
+                'arrival'   => $j['arrival_date_time'],
+                'sections'  => collect($j['sections'])->map(fn($s) => [
+                    'mode' => $s['display_informations']['physical_mode'] ?? $s['type'],
+                    'line' => $s['display_informations']['label'] ?? null,
+                    'from' => $s['from']['name'] ?? null,
+                    'to'   => $s['to']['name'] ?? null,
                 ])->all(),
+            ])->all();
+        });
+    }
+
+    /**
+     * Prochains passages à un arrêt TAN — alimenté par l'API publique TAN.
+     * Plus simple/rapide que Navitia pour le widget "next tram" de la maquette.
+     */
+    public function getNextPassages(string $stopId): array
+    {
+        return Cache::remember("cache:tan:{$stopId}", now()->addSeconds(60), function () use ($stopId) {
+            $data = Http::get("https://open.tan.fr/ewp/tempsattente.json/{$stopId}")
+                ->throw()->json();
+
+            return collect($data ?? [])->map(fn($p) => [
+                'line'      => $p['ligne']['numLigne'] ?? null,
+                'direction' => $p['terminus'] ?? null,
+                'minutes'   => $p['temps'] ?? null,    // "Proche", "5 mn", etc.
             ])->all();
         });
     }
@@ -394,12 +445,12 @@ class TransportService
 
 ## 9. AIService
 
-**API** : Mistral AI — `POST /v1/chat/completions`
-**Modèle** : `mistral-small-latest` (free tier)
-**Clé** : `config('services.mistral.key')`
-
-> L'appel Mistral peut prendre 1–3 secondes. Il est donc toujours appelé
-> depuis un **Job Horizon** (non bloquant), jamais directement dans un controller.
+> L'IA génère une narration courte (3–4 phrases) pour une soirée. Elle est appelée
+> **toujours depuis un Job Horizon** (non bloquant), jamais directement dans un controller.
+>
+> Le provider est configurable via `AI_PROVIDER` (`mistral` | `gemma` | `ollama`).
+> L'objectif est d'avoir un modèle **léger** : Mistral small, Gemma 3 4B, ou Gemma 2 2B
+> en local sur le VPS via Ollama.
 
 ```php
 // app/Services/AIService.php
@@ -407,40 +458,90 @@ class AIService
 {
     public function generateNarrative(array $context): string
     {
-        // Cache basé sur un hash des inputs pour éviter les doubles appels à contexte identique
         $cacheKey = 'cache:ai:' . md5(json_encode($context));
 
         return Cache::remember($cacheKey, now()->addHour(), function () use ($context) {
             $prompt = $this->buildPrompt($context);
 
-            $response = Http::withToken(config('services.mistral.key'))
-                ->post('https://api.mistral.ai/v1/chat/completions', [
-                    'model'    => 'mistral-small-latest',
-                    'messages' => [
-                        ['role' => 'system', 'content' => 'Tu es un guide local nantais enthousiaste et poétique.'],
-                        ['role' => 'user',   'content' => $prompt],
-                    ],
-                    'max_tokens' => 250,
-                ])->throw()->json();
-
-            return $response['choices'][0]['message']['content'];
+            return match (config('services.ai.provider')) {
+                'mistral' => $this->callMistral($prompt),
+                'gemma'   => $this->callGemma($prompt),
+                'ollama'  => $this->callOllama($prompt),
+                default   => throw new \RuntimeException('AI_PROVIDER inconnu'),
+            };
         });
     }
 
     private function buildPrompt(array $ctx): string
     {
         return <<<PROMPT
-        Génère une courte description narrative (3-4 phrases) pour cette soirée à Nantes :
-        - Humeur : {$ctx['humeur']}
-        - Météo : {$ctx['weather']['description']}, {$ctx['weather']['temp']}°C
-        - Événement : {$ctx['event']['title']} à {$ctx['event']['location']}
-        - Lieu : {$ctx['place']['name']} ({$ctx['place']['category']})
+        Tu es un guide nantais qui présente brièvement la soirée idéale.
+        Génère 3 phrases courtes, vivantes, sans emoji.
 
-        Sois poétique, local, et donne envie d'y aller ce soir.
+        Humeur de la soirée : {$ctx['mood']}
+        Météo nantaise : {$ctx['weather']['condition']}, {$ctx['weather']['temp']}°C
+        Venue : {$ctx['venue']['name']} ({$ctx['venue']['type']}, {$ctx['venue']['district']})
+        Musique : {$ctx['venue']['music']}
+        Ce soir : {$ctx['event']['title']}
+
+        Donne envie d'y aller ce soir. Pas plus de 3 phrases.
         PROMPT;
+    }
+
+    private function callMistral(string $prompt): string
+    {
+        $cfg = config('services.ai.mistral');
+
+        $response = Http::withToken($cfg['key'])
+            ->post('https://api.mistral.ai/v1/chat/completions', [
+                'model'      => $cfg['model'],
+                'messages'   => [['role' => 'user', 'content' => $prompt]],
+                'max_tokens' => 200,
+            ])->throw()->json();
+
+        return trim($response['choices'][0]['message']['content']);
+    }
+
+    private function callGemma(string $prompt): string
+    {
+        $cfg = config('services.ai.gemma');
+
+        $response = Http::post(
+            "https://generativelanguage.googleapis.com/v1beta/models/{$cfg['model']}:generateContent?key={$cfg['key']}",
+            [
+                'contents' => [[
+                    'role'  => 'user',
+                    'parts' => [['text' => $prompt]],
+                ]],
+                'generationConfig' => ['maxOutputTokens' => 200],
+            ]
+        )->throw()->json();
+
+        return trim($response['candidates'][0]['content']['parts'][0]['text']);
+    }
+
+    private function callOllama(string $prompt): string
+    {
+        $cfg = config('services.ai.ollama');
+
+        $response = Http::timeout(120)->post("{$cfg['base_url']}/api/generate", [
+            'model'  => $cfg['model'],
+            'prompt' => $prompt,
+            'stream' => false,
+            'options' => ['num_predict' => 200],
+        ])->throw()->json();
+
+        return trim($response['response']);
     }
 }
 ```
+
+> **Choix du provider** :
+> - `mistral` : défaut, free tier, latence ~1–2 s
+> - `gemma` : si tu préfères Gemma sans hébergement (Google AI Studio, free tier 14 RPM sur Gemma 3)
+> - `ollama` : self-hosted sur le VPS — 0 coût API, latence locale ~1–4 s sur Gemma 2 2B (besoin ~3 Go RAM)
+>
+> Le service Ollama tourne dans un container Coolify dédié (cf. `PLAN_DEPLOIEMENT.md §5`).
 
 ---
 
@@ -478,7 +579,7 @@ class SoireeMail extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: "Ta soirée NantesVibes t'attend !");
+        return new Envelope(subject: "Ta nuit nantaise t'attend — NOCTAMBULE");
     }
 
     public function content(): Content
@@ -493,19 +594,23 @@ class SoireeMail extends Mailable
 ```html
 <!DOCTYPE html>
 <html>
-<body>
-    <h1>Ta soirée à Nantes 🌃</h1>
+<body style="font-family: -apple-system, sans-serif; background: #050409; color: #FFF1FA;">
+    <h1 style="color: #FF2D92;">NOCTAMBULE</h1>
 
     <p>{{ $soiree->ai_narrative }}</p>
 
-    <h2>Météo</h2>
-    <p>{{ $soiree->weather_data['description'] }} — {{ $soiree->weather_data['temp'] }}°C</p>
+    <h2 style="color: #A855F7;">Ce soir</h2>
+    <p><strong>{{ $soiree->venue->name }}</strong> — {{ $soiree->venue->district }}</p>
+    @if($soiree->event)
+    <p>{{ $soiree->event->title }}</p>
+    @endif
 
-    <h2>Au programme</h2>
-    <p><strong>Événement :</strong> {{ $soiree->event_data['title'] }}</p>
-    <p><strong>Lieu :</strong> {{ $soiree->place_data['name'] }}</p>
-    @if($soiree->playlist_url)
-    <p><a href="{{ $soiree->playlist_url }}">Écouter la playlist Spotify</a></p>
+    <h3>Météo</h3>
+    <p>{{ $soiree->weather_snapshot['condition'] }} — {{ $soiree->weather_snapshot['temp'] }}°C</p>
+
+    @if(!empty($soiree->tan_snapshot))
+    <h3>Transport</h3>
+    <p>{{ $soiree->venue->transport_hint }} — prochain passage dans {{ $soiree->tan_snapshot[0]['minutes'] ?? '?' }}</p>
     @endif
 </body>
 </html>
@@ -513,9 +618,85 @@ class SoireeMail extends Mailable
 
 ---
 
-## 11. SoireeService
+## 11. BadgeService
 
-L'orchestrateur principal. Il appelle tous les services et crée la soirée en BDD.
+> Service de gamification. À chaque soirée terminée, on évalue les critères et on
+> attribue les badges débloqués. Lecture côté `/api/v1/user/badges`.
+
+```php
+// app/Services/BadgeService.php
+class BadgeService
+{
+    /**
+     * Renvoie la liste de tous les badges, marqués comme unlocked ou non pour ce user.
+     */
+    public function forUser(User $user): array
+    {
+        $unlocked = $user->badges()->pluck('badges.id')->all();
+
+        return Badge::all()->map(fn(Badge $b) => [
+            'id'          => $b->id,
+            'label'       => $b->label,
+            'description' => $b->description,
+            'icon'        => $b->icon,
+            'unlocked'    => in_array($b->id, $unlocked),
+            'unlocked_at' => $user->badges->firstWhere('id', $b->id)?->pivot->unlocked_at,
+        ])->all();
+    }
+
+    /**
+     * Évalue tous les badges et attribue ceux qui sont nouvellement débloqués.
+     * Appelé après chaque soirée via CheckBadgesJob.
+     */
+    public function evaluate(User $user): array
+    {
+        $newlyUnlocked = [];
+
+        foreach (Badge::all() as $badge) {
+            if ($user->badges->contains($badge->id)) {
+                continue;   // déjà unlocked
+            }
+
+            if ($this->meetsCriteria($user, $badge->criteria)) {
+                $user->badges()->attach($badge->id, ['unlocked_at' => now()]);
+                $newlyUnlocked[] = $badge->id;
+            }
+        }
+
+        return $newlyUnlocked;
+    }
+
+    private function meetsCriteria(User $user, array $criteria): bool
+    {
+        $soirees = $user->soirees()->with('venue')->get();
+
+        return match ($criteria['type']) {
+            // 10 sorties après 1h du matin
+            'late_nights' => $soirees->filter(
+                fn($s) => $s->created_at->hour >= 1 && $s->created_at->hour < 6
+            )->count() >= $criteria['min'],
+
+            // 5 quartiers différents visités
+            'districts' => $soirees->pluck('venue.district')->unique()->count() >= $criteria['min'],
+
+            // 3 genres musicaux différents
+            'music_genres' => $soirees->pluck('venue.music')->filter()->unique()->count() >= $criteria['min'],
+
+            // 5 visites au même venue
+            'same_venue' => $soirees->groupBy('venue_id')->map->count()->max() >= $criteria['min'],
+
+            default => false,
+        };
+    }
+}
+```
+
+---
+
+## 12. SoireeService
+
+L'orchestrateur principal. Il choisit un venue selon le mood, agrège la météo et
+le TAN, sauvegarde, puis dispatche les jobs (narrative IA + check badges).
 
 ```php
 // app/Services/SoireeService.php
@@ -524,64 +705,73 @@ class SoireeService
     public function __construct(
         private readonly WeatherService   $weather,
         private readonly EventService     $events,
-        private readonly PlaceService     $places,
-        private readonly SpotifyService   $spotify,
+        private readonly VenueService     $venues,
         private readonly TransportService $transport,
     ) {}
 
     public function generate(array $params, ?User $user): array
     {
-        $humeur = $params['humeur'];
-        $budget = $params['budget'];
-        $date   = $params['date'] ?? now()->format('Y-m-d');
+        $mood     = $params['mood'];
+        $district = $params['district'] ?? null;
+        $date     = $params['date'] ?? now()->format('Y-m-d');
 
-        // Appels en parallèle (ne bloquent pas les uns les autres si cachés)
-        $weather   = $this->weather->getCurrent();
-        $events    = $this->events->getByMood($humeur, $date);
-        $places    = $this->places->getByMood($humeur);
-        $playlists = $this->spotify->getPlaylistByMood($humeur);
+        // 1) Sélection d'un venue local pour le mood (+ filtre district éventuel)
+        $venue = Venue::query()
+            ->where('mood', $mood)
+            ->when($district, fn($q) => $q->where('district', $district))
+            ->with('tonight')
+            ->inRandomOrder()
+            ->first()
+            ?? Venue::where('mood', $mood)->with('tonight')->firstOrFail();
 
-        $soiree = [
-            'humeur'    => $humeur,
-            'budget'    => $budget,
+        // 2) Données fraîches en parallèle (toutes cachées si déjà appelées)
+        $weather = $this->weather->getCurrent();
+        $events  = $this->events->getByMood($mood, $date);
+
+        // 3) TAN — si on a un stopId associé au venue (sinon on skip)
+        $tan = []; // peut être enrichi via venue->stop_id si modélisé plus tard
+
+        $venueData = $this->venues->getBySlug($venue->slug);
+
+        $payload = [
+            'mood'      => $mood,
+            'venue'     => $venueData,
+            'event'     => $venue->tonight,
             'weather'   => $weather,
-            'events'    => $events,
-            'places'    => $places,
-            'playlists' => $playlists,
-            'narrative' => null,   // rempli de manière async par Horizon
+            'tan'       => $tan,
+            'events'    => $events,    // suggestions OpenAgenda complémentaires
+            'narrative' => null,        // rempli plus tard par GenerateAINarrativeJob
         ];
 
-        // Sauvegarde + dispatch jobs si utilisateur connecté
+        // 4) Sauvegarde + jobs si user connecté
         if ($user) {
-            $model = $user->soirees()->create([
-                'id'             => Str::uuid(),
-                'humeur'         => $humeur,
-                'budget'         => $budget,
-                'weather_data'   => $weather,
-                'event_data'     => $events[0] ?? [],
-                'place_data'     => $places[0] ?? [],
-                'transport_data' => [],
-                'playlist_url'   => $playlists[0]['url'] ?? null,
+            $soiree = $user->soirees()->create([
+                'id'               => Str::uuid(),
+                'venue_id'         => $venue->id,
+                'event_id'         => $venue->tonight?->id,
+                'mood'             => $mood,
+                'weather_snapshot' => $weather,
+                'tan_snapshot'     => $tan,
             ]);
 
-            // Non bloquant : la narration IA sera écrite en BDD quand Horizon la traite
-            GenerateAINarrativeJob::dispatch($model);
+            GenerateAINarrativeJob::dispatch($soiree);
+            CheckBadgesJob::dispatch($user)->delay(now()->addSeconds(2));
 
-            $soiree['soiree_id'] = $model->id;
+            $payload['soiree_id'] = $soiree->id;
         }
 
-        return $soiree;
+        return $payload;
     }
 }
 ```
 
 ---
 
-## 12. Jobs Horizon
+## 13. Jobs Horizon
 
 ### GenerateAINarrativeJob
 
-Appelle Mistral AI et écrit la narration dans la soirée sauvegardée.
+Appelle l'IA et écrit la narration dans la soirée sauvegardée.
 
 ```php
 // app/Jobs/GenerateAINarrativeJob.php
@@ -591,17 +781,26 @@ class GenerateAINarrativeJob implements ShouldQueue
 
     public string $queue   = 'ai';
     public int    $tries   = 2;
-    public int    $timeout = 120;   // Mistral peut être lent
+    public int    $timeout = 120;
 
     public function __construct(public readonly Soiree $soiree) {}
 
     public function handle(AIService $ai): void
     {
+        $this->soiree->loadMissing(['venue', 'event']);
+
         $narrative = $ai->generateNarrative([
-            'humeur'  => $this->soiree->humeur,
-            'weather' => $this->soiree->weather_data,
-            'event'   => $this->soiree->event_data,
-            'place'   => $this->soiree->place_data,
+            'mood'    => $this->soiree->mood,
+            'weather' => $this->soiree->weather_snapshot,
+            'venue'   => [
+                'name'     => $this->soiree->venue->name,
+                'type'     => $this->soiree->venue->type,
+                'district' => $this->soiree->venue->district,
+                'music'    => $this->soiree->venue->music,
+            ],
+            'event'   => [
+                'title' => $this->soiree->event?->title ?? '',
+            ],
         ]);
 
         $this->soiree->update(['ai_narrative' => $narrative]);
@@ -609,15 +808,12 @@ class GenerateAINarrativeJob implements ShouldQueue
 
     public function failed(\Throwable $e): void
     {
-        // Non bloquant pour l'user — on log juste l'erreur
         Log::error("GenerateAINarrativeJob failed for soiree {$this->soiree->id}: {$e->getMessage()}");
     }
 }
 ```
 
 ### SendSoireeEmailJob
-
-Envoie les emails aux destinataires de manière asynchrone.
 
 ```php
 // app/Jobs/SendSoireeEmailJob.php
@@ -640,6 +836,30 @@ class SendSoireeEmailJob implements ShouldQueue
 }
 ```
 
+### CheckBadgesJob
+
+```php
+// app/Jobs/CheckBadgesJob.php
+class CheckBadgesJob implements ShouldQueue
+{
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+
+    public string $queue = 'default';
+    public int    $tries = 1;
+
+    public function __construct(public readonly User $user) {}
+
+    public function handle(BadgeService $badges): void
+    {
+        $newlyUnlocked = $badges->evaluate($this->user);
+
+        if (!empty($newlyUnlocked)) {
+            Log::info("User {$this->user->id} unlocked badges: " . implode(', ', $newlyUnlocked));
+        }
+    }
+}
+```
+
 ### PrefetchWeatherJob
 
 Réchauffe le cache météo avant qu'il n'expire. Déclenché par le scheduler.
@@ -653,16 +873,14 @@ class PrefetchWeatherJob implements ShouldQueue
     public function handle(WeatherService $weather): void
     {
         Cache::forget('cache:weather:nantes');
-        $weather->getCurrent();   // re-remplit le cache
+        $weather->getCurrent();
     }
 }
 ```
 
 ---
 
-## 13. Scheduler
-
-Le scheduler déclenche les jobs de préchargement automatiquement.
+## 14. Scheduler
 
 ```php
 // routes/console.php
@@ -671,18 +889,12 @@ use Illuminate\Support\Facades\Schedule;
 Schedule::job(new PrefetchWeatherJob)->everyTenMinutes();
 ```
 
-Le container `scheduler` dans Docker tourne `php artisan schedule:work` en continu.
-En production, remplacer par une crontab :
-
-```
-* * * * * cd /var/www/html && php artisan schedule:run >> /dev/null 2>&1
-```
+Le container `scheduler` (cf. `PLAN_BACKEND.md §10` pour le dev local et
+`PLAN_DEPLOIEMENT.md §5` pour la prod sur Coolify) tourne `php artisan schedule:work`.
 
 ---
 
-## 14. Binding dans AppServiceProvider
-
-Les services sont enregistrés dans le container IoC pour que Laravel les injecte automatiquement.
+## 15. Binding dans AppServiceProvider
 
 ```php
 // app/Providers/AppServiceProvider.php
@@ -690,53 +902,64 @@ public function register(): void
 {
     $this->app->singleton(WeatherService::class);
     $this->app->singleton(EventService::class);
+    $this->app->singleton(VenueService::class);
     $this->app->singleton(PlaceService::class);
-    $this->app->singleton(SpotifyService::class);
     $this->app->singleton(TransportService::class);
     $this->app->singleton(AIService::class);
     $this->app->singleton(MailService::class);
+    $this->app->singleton(BadgeService::class);
     $this->app->singleton(SoireeService::class);
 }
 ```
 
-> `singleton` = une seule instance par requête HTTP → économise la mémoire et évite
-> de recréer les services à chaque injection.
+> `singleton` = une seule instance par requête HTTP → économise la mémoire.
 
 ---
 
-## 15. Checklist
+## 16. Checklist
 
-### Phase 1 — Services de données (sans dépendances entre eux)
+### Phase 1 — Services BDD locale (sans API externes)
+- [ ] `VenueService::list()` + filtres
+- [ ] `VenueService::getBySlug()` + tonight + reviews + crowd + tracking trending
+- [ ] `VenueService::estimateCrowd()` + cache 5 min
+- [ ] `VenueService::getTopSpots()` (Redis sorted set)
+- [ ] `BadgeService::forUser()` + `evaluate()` + `meetsCriteria()`
+
+### Phase 2 — Services APIs externes
 - [ ] `WeatherService::getCurrent()` + cache 10 min
 - [ ] `EventService::getByMood()` + cache 30 min
-- [ ] `PlaceService::getByMood()` + cache 1h
-- [ ] `PlaceService::trackView()` + `getTopSpots()` (Redis sorted set)
+- [ ] `PlaceService::getNearby()` + cache 1h (Foursquare)
 - [ ] `TransportService::getJourney()` + cache 5 min
+- [ ] `TransportService::getNextPassages()` + cache 60 s
 
-### Phase 2 — Services avec auth externe
-- [ ] `SpotifyService::getAccessToken()` → token OAuth2 dans Redis (TTL 3500s)
-- [ ] `SpotifyService::getPlaylistByMood()` + cache 2h
-- [ ] `AIService::generateNarrative()` + cache 1h par hash
+### Phase 3 — IA multi-provider
+- [ ] `AIService::callMistral()` (provider défaut)
+- [ ] `AIService::callGemma()` (Google AI Studio)
+- [ ] `AIService::callOllama()` (self-hosted, optionnel)
+- [ ] Switch via `config('services.ai.provider')`
+- [ ] Cache 1h par hash des inputs
 
-### Phase 3 — Mail & Mailable
+### Phase 4 — Mail & Mailable
 - [ ] `MailService::sendSoiree()`
 - [ ] `SoireeMail` Mailable + template Blade `emails/soiree.blade.php`
 
-### Phase 4 — Jobs Horizon
+### Phase 5 — Jobs Horizon
 - [ ] `GenerateAINarrativeJob` (queue `ai`, timeout 120s)
 - [ ] `SendSoireeEmailJob` (queue `notifications`)
+- [ ] `CheckBadgesJob` (queue `default`)
 - [ ] `PrefetchWeatherJob` (scheduled)
 - [ ] Tester depuis Tinker : `GenerateAINarrativeJob::dispatch($soiree)`
 - [ ] Vérifier les jobs dans le dashboard `/horizon`
 
-### Phase 5 — SoireeService & intégration
+### Phase 6 — SoireeService & intégration
 - [ ] `SoireeService::generate()` orchestrant tous les services
 - [ ] Binding des services dans `AppServiceProvider`
-- [ ] Brancher `SoireeService` dans `SoireeController` (avec l'autre dev)
-- [ ] Brancher `PlaceService::getTopSpots()` dans `StatsController`
+- [ ] Brancher `SoireeService` dans `SoireeController`
+- [ ] Brancher `VenueService` dans `VenueController`
+- [ ] Brancher `BadgeService` dans `BadgeController`
 - [ ] Scheduler `PrefetchWeatherJob` toutes les 10 min
-- [ ] Tests end-to-end : générer une soirée complète
+- [ ] Tests end-to-end : générer une soirée complète → narrative IA arrive après ~2 s → badge éventuellement débloqué
 
 ---
 
-*Dernière mise à jour : 2026-04-09*
+*Dernière mise à jour : 2026-04-29*
