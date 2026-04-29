@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import WeatherWidget from '@/components/WeatherWidget.vue'
+
 const moods = [
   { id: 'festif', label: 'Festif', dotClass: 'bg-mood-festif' },
   { id: 'chill', label: 'Chill', dotClass: 'bg-mood-chill' },
@@ -30,5 +32,6 @@ const moods = [
         {{ mood.label }}
       </li>
     </ul>
+    <WeatherWidget class="w-full max-w-xs" />
   </main>
 </template>
