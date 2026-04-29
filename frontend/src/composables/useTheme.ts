@@ -3,11 +3,14 @@ import { ref, watch, type Ref } from 'vue'
 export type Theme = 'night' | 'sunset'
 
 const STORAGE_KEY = 'noctambule.theme'
-const VALID_THEMES: readonly Theme[] = ['night', 'sunset']
+
+function isTheme(value: unknown): value is Theme {
+  return value === 'night' || value === 'sunset'
+}
 
 function readPersistedTheme(): Theme {
   const stored = localStorage.getItem(STORAGE_KEY)
-  return VALID_THEMES.includes(stored as Theme) ? (stored as Theme) : 'night'
+  return isTheme(stored) ? stored : 'night'
 }
 
 interface ThemeState {
