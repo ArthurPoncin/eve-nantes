@@ -1,11 +1,13 @@
-# NantesVibes — Plan Backend Laravel (Fondations)
+# NOCTAMBULE — Plan Backend Laravel (Fondations)
 
 > Ce document est destiné au développeur en charge des **bases du backend**.
-> Stack : **PHP 8.3 + Laravel 11**, **PostgreSQL**, **Redis**.
+> Stack : **PHP 8.3 + Laravel 12**, **PostgreSQL**, **Redis**.
 >
 > Les services métier, jobs Horizon et logique Redis avancée sont gérés par un autre
 > développeur (voir `PLAN_SERVICES.md`). Ton rôle : fournir une base solide sur laquelle
 > il pourra brancher ses services.
+>
+> Le déploiement (Coolify + VPS) est documenté à part dans `PLAN_DEPLOIEMENT.md`.
 
 ---
 
@@ -20,7 +22,7 @@
 7. [Routes API & Controllers](#7-routes-api--controllers)
 8. [Sécurité & validation](#8-sécurité--validation)
 9. [Horizon — Installation & configuration](#9-horizon)
-10. [Docker](#10-docker)
+10. [Docker (dev local)](#10-docker)
 11. [Documentation OpenAPI (L5-Swagger)](#11-documentation-openapi)
 12. [Checklist](#12-checklist)
 
@@ -37,7 +39,7 @@ Frontend Vue 3
      │ HTTP/JSON  Bearer token (Sanctum)
      ▼
 ┌────────────────────────────────────────┐
-│         Laravel 11 — API              │
+│         Laravel 12 — API              │
 │                                        │
 │  Routes → Controllers → Services      │  ← Services injectés (autre dev)
 │                                        │
@@ -50,12 +52,13 @@ Frontend Vue 3
 ```
 
 **Ce que tu fais :**
-- Setup du projet et Docker
-- Migrations et modèles Eloquent
+- Setup du projet Laravel 12 et Docker dev local
+- Migrations et modèles Eloquent (8 tables)
+- Seeders (venues + badges + events)
 - Auth (Sanctum + Socialite)
 - Routes et controllers (squelettes qui appellent les services)
 - Sécurité, validation, CORS
-- Installation et configuration de Horizon (pas les jobs)
+- Installation et configuration de Horizon (les jobs eux-mêmes sont écrits par l'autre dev)
 - Base L5-Swagger
 
 ---
@@ -103,10 +106,11 @@ backend/
 │   │   │   ├── SoireeController.php            # generate, show, share, review
 │   │   │   ├── WeatherController.php
 │   │   │   ├── EventController.php
-│   │   │   ├── PlaceController.php
-│   │   │   ├── MusicController.php
-│   │   │   ├── TransportController.php
-│   │   │   ├── UserController.php              # favoris, historique
+│   │   │   ├── VenueController.php             # list, show, crowd
+│   │   │   ├── PlaceController.php             # Foursquare (lieux complémentaires)
+│   │   │   ├── TransportController.php         # journey + stop
+│   │   │   ├── BadgeController.php             # liste badges user
+│   │   │   ├── UserController.php              # favoris, historique soirees
 │   │   │   └── StatsController.php             # trending
 │   │   ├── Middleware/
 │   │   │   └── SecurityHeaders.php
@@ -117,16 +121,25 @@ backend/
 │   │       ├── GenerateSoireeRequest.php
 │   │       ├── ShareSoireeRequest.php
 │   │       └── StoreFavoriteRequest.php
-│   ├── Jobs/                                   # créés par l'autre dev
+│   ├── Jobs/                                   # implémentés par l'autre dev
 │   ├── Models/
 │   │   ├── User.php
+│   │   ├── Venue.php
+│   │   ├── Event.php
 │   │   ├── Soiree.php
 │   │   ├── Favorite.php
-│   │   └── Review.php
+│   │   ├── Review.php
+│   │   ├── Badge.php
+│   │   └── UserBadge.php
 │   ├── Services/                               # implémentés par l'autre dev
 │   └── Providers/
 │       └── AppServiceProvider.php             # rate limiters + bindings services
-├── database/migrations/
+├── database/
+│   ├── migrations/
+│   └── seeders/
+│       ├── VenueSeeder.php                     # 6 venues de la maquette
+│       ├── BadgeSeeder.php                     # 4 badges
+│       └── EventSeeder.php                     # 1 event tonight par venue
 ├── routes/
 │   └── api.php
 ├── config/
@@ -144,7 +157,7 @@ backend/
 
 ```dotenv
 # App
-APP_NAME=NantesVibes
+APP_NAME=NOCTAMBULE
 APP_ENV=local
 APP_URL=http://localhost:8000
 
@@ -152,8 +165,8 @@ APP_URL=http://localhost:8000
 DB_CONNECTION=pgsql
 DB_HOST=postgres
 DB_PORT=5432
-DB_DATABASE=nantesvibes
-DB_USERNAME=nantes
+DB_DATABASE=noctambule
+DB_USERNAME=noctambule
 DB_PASSWORD=secret
 
 # Redis
@@ -177,21 +190,31 @@ GITHUB_CLIENT_ID=
 GITHUB_CLIENT_SECRET=
 GITHUB_REDIRECT_URI=http://localhost:8000/api/v1/auth/github/callback
 
-# APIs externes (clés à obtenir par chaque dev)
+# APIs externes
 OPENWEATHER_API_KEY=
 OPENAGENDA_API_KEY=
 FOURSQUARE_API_KEY=
-SPOTIFY_CLIENT_ID=
-SPOTIFY_CLIENT_SECRET=
 NAVITIA_API_KEY=
+
+# IA — provider configurable (mistral | gemma | ollama)
+AI_PROVIDER=mistral
 MISTRAL_API_KEY=
+MISTRAL_MODEL=mistral-small-latest
+
+# Si AI_PROVIDER=gemma (Google AI Studio)
+GOOGLE_AI_API_KEY=
+GEMMA_MODEL=gemma-3-4b-it
+
+# Si AI_PROVIDER=ollama (self-hosted, en option sur le VPS)
+OLLAMA_BASE_URL=http://ollama:11434
+OLLAMA_MODEL=gemma2:2b
 
 # Mail (Mailjet)
 MAIL_MAILER=mailjet
 MAILJET_APIKEY=
 MAILJET_APISECRET=
-MAIL_FROM_ADDRESS=noreply@nantesvibes.fr
-MAIL_FROM_NAME=NantesVibes
+MAIL_FROM_ADDRESS=noreply@noctambule.fr
+MAIL_FROM_NAME=NOCTAMBULE
 
 # Horizon
 HORIZON_DOMAIN=
@@ -214,12 +237,24 @@ return [
     'openweather' => ['key' => env('OPENWEATHER_API_KEY')],
     'openagenda'  => ['key' => env('OPENAGENDA_API_KEY')],
     'foursquare'  => ['key' => env('FOURSQUARE_API_KEY')],
-    'spotify'     => [
-        'client_id'     => env('SPOTIFY_CLIENT_ID'),
-        'client_secret' => env('SPOTIFY_CLIENT_SECRET'),
-    ],
     'navitia'     => ['key' => env('NAVITIA_API_KEY')],
-    'mistral'     => ['key' => env('MISTRAL_API_KEY')],
+
+    // IA — couche d'abstraction, le service AIService lit `ai.provider`
+    'ai' => [
+        'provider' => env('AI_PROVIDER', 'mistral'),
+        'mistral' => [
+            'key'   => env('MISTRAL_API_KEY'),
+            'model' => env('MISTRAL_MODEL', 'mistral-small-latest'),
+        ],
+        'gemma' => [
+            'key'   => env('GOOGLE_AI_API_KEY'),
+            'model' => env('GEMMA_MODEL', 'gemma-3-4b-it'),
+        ],
+        'ollama' => [
+            'base_url' => env('OLLAMA_BASE_URL', 'http://ollama:11434'),
+            'model'    => env('OLLAMA_MODEL', 'gemma2:2b'),
+        ],
+    ],
 ];
 ```
 
@@ -235,50 +270,101 @@ Schema::create('users', function (Blueprint $table) {
     $table->uuid('id')->primary();
     $table->string('email')->unique();
     $table->string('username');
-    $table->string('password')->nullable();   // nullable pour les users OAuth
+    $table->string('password')->nullable();      // nullable pour les users OAuth
     $table->string('google_id')->nullable()->unique();
     $table->string('github_id')->nullable()->unique();
     $table->string('avatar')->nullable();
     $table->timestamps();
 });
 
+// create_venues_table
+Schema::create('venues', function (Blueprint $table) {
+    $table->uuid('id')->primary();
+    $table->string('slug')->unique();             // 'macadam', 'altercafe'…
+    $table->string('name');
+    $table->enum('type', ['club', 'bar', 'salle', 'pub']);
+    $table->string('district');                   // 'Île de Nantes', 'Bouffay', 'Centre'
+    $table->enum('mood', ['festif', 'chill', 'decouverte', 'afterwork']);
+    $table->string('music')->nullable();          // 'Techno', 'Indie / Pop'
+    $table->string('price')->nullable();          // '€', '€€', '€€€'
+    $table->string('cover')->nullable();          // '12€', 'Gratuit'
+    $table->string('time_open')->nullable();      // '23:00 — 06:00'
+    $table->decimal('lat', 10, 7);
+    $table->decimal('lng', 10, 7);
+    $table->string('transport_hint')->nullable();// 'Tram 1', 'Busway 5', 'À pied'
+    $table->string('photo_url')->nullable();
+    $table->jsonb('tags')->default('[]');
+    $table->timestamps();
+});
+
+// create_events_table
+Schema::create('events', function (Blueprint $table) {
+    $table->uuid('id')->primary();
+    $table->foreignUuid('venue_id')->constrained()->cascadeOnDelete();
+    $table->string('title');                      // 'DJ ROMA — Set techno mélodique'
+    $table->dateTime('starts_at');
+    $table->dateTime('ends_at')->nullable();
+    $table->string('source')->default('local');   // 'local' | 'openagenda'
+    $table->string('external_id')->nullable();    // si OpenAgenda
+    $table->text('description')->nullable();
+    $table->string('image_url')->nullable();
+    $table->timestamps();
+
+    $table->index(['venue_id', 'starts_at']);
+});
+
 // create_soirees_table
 Schema::create('soirees', function (Blueprint $table) {
     $table->uuid('id')->primary();
     $table->foreignUuid('user_id')->constrained()->cascadeOnDelete();
-    $table->enum('humeur', ['chill', 'festif', 'romantique', 'culturel']);
-    $table->enum('budget', ['petit', 'moyen', 'libre']);
-    $table->jsonb('weather_data');
-    $table->jsonb('event_data');
-    $table->jsonb('place_data');
-    $table->jsonb('transport_data');
-    $table->text('playlist_url')->nullable();
+    $table->foreignUuid('venue_id')->constrained();
+    $table->foreignUuid('event_id')->nullable()->constrained();
+    $table->enum('mood', ['festif', 'chill', 'decouverte', 'afterwork']);
+    $table->jsonb('weather_snapshot')->nullable();
+    $table->jsonb('tan_snapshot')->nullable();
     $table->text('ai_narrative')->nullable();
     $table->jsonb('shared_with')->default('[]');
     $table->timestamps();
 });
 
-// create_favorites_table
+// create_favorites_table  (polymorphe — venues ou events)
 Schema::create('favorites', function (Blueprint $table) {
     $table->uuid('id')->primary();
     $table->foreignUuid('user_id')->constrained()->cascadeOnDelete();
-    $table->enum('type', ['event', 'place', 'playlist']);
-    $table->string('external_id');
-    $table->enum('source', ['openagenda', 'foursquare', 'spotify']);
-    $table->string('label');
+    $table->uuidMorphs('favoritable');            // favoritable_id + favoritable_type
     $table->timestamps();
-    $table->unique(['user_id', 'external_id', 'source']);
+    $table->unique(['user_id', 'favoritable_id', 'favoritable_type']);
 });
 
 // create_reviews_table
 Schema::create('reviews', function (Blueprint $table) {
     $table->uuid('id')->primary();
     $table->foreignUuid('user_id')->constrained()->cascadeOnDelete();
-    $table->foreignUuid('soiree_id')->constrained()->cascadeOnDelete();
-    $table->unsignedTinyInteger('rating');    // 1–5
+    $table->foreignUuid('venue_id')->constrained()->cascadeOnDelete();
+    $table->unsignedTinyInteger('rating');        // 1–5
     $table->text('comment')->nullable();
     $table->timestamps();
-    $table->unique(['user_id', 'soiree_id']);
+    $table->unique(['user_id', 'venue_id']);
+});
+
+// create_badges_table  (définitions seedées)
+Schema::create('badges', function (Blueprint $table) {
+    $table->string('id')->primary();              // 'noctambule', 'explorateur', 'melomane', 'fidele'
+    $table->string('label');
+    $table->text('description');
+    $table->string('icon');                       // '◉', '◇', '♪', '✦'
+    $table->jsonb('criteria');                    // règles d'unlock pour BadgeService
+    $table->timestamps();
+});
+
+// create_user_badges_table
+Schema::create('user_badges', function (Blueprint $table) {
+    $table->id();
+    $table->foreignUuid('user_id')->constrained()->cascadeOnDelete();
+    $table->string('badge_id');
+    $table->foreign('badge_id')->references('id')->on('badges')->cascadeOnDelete();
+    $table->timestamp('unlocked_at')->useCurrent();
+    $table->unique(['user_id', 'badge_id']);
 });
 ```
 
@@ -303,6 +389,44 @@ class User extends Authenticatable
     public function soirees(): HasMany   { return $this->hasMany(Soiree::class); }
     public function favorites(): HasMany { return $this->hasMany(Favorite::class); }
     public function reviews(): HasMany   { return $this->hasMany(Review::class); }
+    public function badges(): BelongsToMany {
+        return $this->belongsToMany(Badge::class, 'user_badges')->withTimestamps();
+    }
+}
+
+// Venue.php
+class Venue extends Model
+{
+    protected $keyType = 'string';
+    public $incrementing = false;
+
+    protected $casts = [
+        'tags' => 'array',
+        'lat'  => 'float',
+        'lng'  => 'float',
+    ];
+
+    public function events(): HasMany   { return $this->hasMany(Event::class); }
+    public function reviews(): HasMany  { return $this->hasMany(Review::class); }
+    public function tonight(): HasOne   {
+        return $this->hasOne(Event::class)->whereDate('starts_at', today())->latestOfMany();
+    }
+    public function favorites(): MorphMany { return $this->morphMany(Favorite::class, 'favoritable'); }
+}
+
+// Event.php
+class Event extends Model
+{
+    protected $keyType = 'string';
+    public $incrementing = false;
+
+    protected $casts = [
+        'starts_at' => 'datetime',
+        'ends_at'   => 'datetime',
+    ];
+
+    public function venue(): BelongsTo     { return $this->belongsTo(Venue::class); }
+    public function favorites(): MorphMany { return $this->morphMany(Favorite::class, 'favoritable'); }
 }
 
 // Soiree.php
@@ -312,15 +436,14 @@ class Soiree extends Model
     public $incrementing = false;
 
     protected $casts = [
-        'weather_data'   => 'array',
-        'event_data'     => 'array',
-        'place_data'     => 'array',
-        'transport_data' => 'array',
-        'shared_with'    => 'array',
+        'weather_snapshot' => 'array',
+        'tan_snapshot'     => 'array',
+        'shared_with'      => 'array',
     ];
 
     public function user(): BelongsTo  { return $this->belongsTo(User::class); }
-    public function reviews(): HasMany { return $this->hasMany(Review::class); }
+    public function venue(): BelongsTo { return $this->belongsTo(Venue::class); }
+    public function event(): BelongsTo { return $this->belongsTo(Event::class); }
 }
 
 // Favorite.php
@@ -329,9 +452,10 @@ class Favorite extends Model
     protected $keyType = 'string';
     public $incrementing = false;
 
-    protected $fillable = ['id', 'user_id', 'type', 'external_id', 'source', 'label'];
+    protected $fillable = ['id', 'user_id', 'favoritable_id', 'favoritable_type'];
 
-    public function user(): BelongsTo { return $this->belongsTo(User::class); }
+    public function user(): BelongsTo            { return $this->belongsTo(User::class); }
+    public function favoritable(): MorphTo       { return $this->morphTo(); }
 }
 
 // Review.php
@@ -340,10 +464,78 @@ class Review extends Model
     protected $keyType = 'string';
     public $incrementing = false;
 
-    protected $fillable = ['id', 'user_id', 'soiree_id', 'rating', 'comment'];
+    protected $fillable = ['id', 'user_id', 'venue_id', 'rating', 'comment'];
 
-    public function user(): BelongsTo   { return $this->belongsTo(User::class); }
-    public function soiree(): BelongsTo { return $this->belongsTo(Soiree::class); }
+    public function user(): BelongsTo  { return $this->belongsTo(User::class); }
+    public function venue(): BelongsTo { return $this->belongsTo(Venue::class); }
+}
+
+// Badge.php
+class Badge extends Model
+{
+    protected $keyType = 'string';
+    public $incrementing = false;
+
+    protected $casts = ['criteria' => 'array'];
+
+    public function users(): BelongsToMany {
+        return $this->belongsToMany(User::class, 'user_badges')->withTimestamps();
+    }
+}
+```
+
+### Seeders
+
+```php
+// database/seeders/VenueSeeder.php — exemple Macadam
+DB::table('venues')->insert([
+    [
+        'id'              => Str::uuid(),
+        'slug'            => 'macadam',
+        'name'            => 'Macadam',
+        'type'            => 'club',
+        'district'        => 'Île de Nantes',
+        'mood'            => 'festif',
+        'music'           => 'Techno',
+        'price'           => '€€',
+        'cover'           => '12€',
+        'time_open'       => '23:00 — 06:00',
+        'lat'             => 47.205,
+        'lng'             => -1.563,
+        'transport_hint'  => 'Tram 1',
+        'photo_url'       => 'https://images.unsplash.com/photo-1545128485-c400e7702796?w=800&q=80',
+        'tags'            => json_encode(['Techno', 'Dancefloor', 'Late night']),
+        'created_at'      => now(),
+        'updated_at'      => now(),
+    ],
+    // … L'Alter'Café, Le Lieu Unique, Le Cluricaune, Warehouse, Le Ferrailleur
+]);
+
+// database/seeders/BadgeSeeder.php
+DB::table('badges')->insert([
+    ['id' => 'noctambule',  'label' => 'Noctambule',  'description' => '10 sorties après 1h',  'icon' => '◉', 'criteria' => json_encode(['type' => 'late_nights', 'min' => 10])],
+    ['id' => 'explorateur', 'label' => 'Explorateur', 'description' => '5 quartiers visités',  'icon' => '◇', 'criteria' => json_encode(['type' => 'districts',   'min' => 5])],
+    ['id' => 'melomane',    'label' => 'Mélomane',    'description' => '3 genres différents',  'icon' => '♪', 'criteria' => json_encode(['type' => 'music_genres','min' => 3])],
+    ['id' => 'fidele',      'label' => 'Fidèle',      'description' => '5 visites au même lieu','icon' => '✦', 'criteria' => json_encode(['type' => 'same_venue', 'min' => 5])],
+]);
+
+// database/seeders/EventSeeder.php — 1 event "tonight" par venue
+foreach (Venue::all() as $venue) {
+    Event::create([
+        'id'         => Str::uuid(),
+        'venue_id'   => $venue->id,
+        'title'      => match ($venue->slug) {
+            'macadam'      => 'DJ ROMA — Set techno mélodique',
+            'altercafe'    => 'Open mic & cocktails maison',
+            'lieuunique'   => 'Soirée Électro Curiosa',
+            'lecluricaune' => 'Quiz musical irlandais',
+            'warehouse'    => 'Disco Inferno feat. Léonie',
+            'ferrailleur'  => 'Concert : The Dust Coda + Jaune',
+        },
+        'starts_at'  => now()->setTime(21, 0),
+        'ends_at'    => now()->addDay()->setTime(2, 0),
+        'source'     => 'local',
+    ]);
 }
 ```
 
@@ -477,12 +669,17 @@ Route::prefix('v1')->group(function () {
 
     // Données temps réel (services gérés par l'autre dev)
     Route::middleware('throttle:api')->group(function () {
-        Route::get('weather',   [WeatherController::class, 'index']);
-        Route::get('events',    [EventController::class, 'index']);
-        Route::get('places',    [PlaceController::class, 'index']);
-        Route::get('music',     [MusicController::class, 'index']);
-        Route::get('transport', [TransportController::class, 'index']);
+        Route::get('weather',                  [WeatherController::class, 'index']);
+        Route::get('events',                   [EventController::class, 'index']);
+        Route::get('places',                   [PlaceController::class, 'index']);     // Foursquare
+        Route::get('transport',                [TransportController::class, 'journey']);
+        Route::get('transport/stop/{stopId}',  [TransportController::class, 'stop']);
     });
+
+    // Venues (lecture seule publique)
+    Route::get('venues',              [VenueController::class, 'index']);
+    Route::get('venues/{slug}',       [VenueController::class, 'show']);
+    Route::get('venues/{slug}/crowd', [VenueController::class, 'crowd']);
 
     // Soirées
     Route::prefix('soiree')->group(function () {
@@ -501,6 +698,7 @@ Route::prefix('v1')->group(function () {
         Route::get('favorites',            [UserController::class, 'favorites']);
         Route::post('favorites',           [UserController::class, 'storeFavorite']);
         Route::delete('favorites/{id}',    [UserController::class, 'destroyFavorite']);
+        Route::get('badges',               [BadgeController::class, 'index']);
     });
 
     // Stats publiques
@@ -530,7 +728,7 @@ class SoireeController extends Controller
 
     public function show(string $id): JsonResponse
     {
-        $soiree = Soiree::findOrFail($id);
+        $soiree = Soiree::with(['venue', 'event'])->findOrFail($id);
 
         return response()->json($soiree);
     }
@@ -539,7 +737,6 @@ class SoireeController extends Controller
     {
         $soiree = Soiree::findOrFail($id);
 
-        // Job dispatché par le service (implémenté par l'autre dev)
         SendSoireeEmailJob::dispatch($soiree, $request->validated('recipients'));
 
         return response()->json(['message' => 'Email envoyé']);
@@ -549,8 +746,8 @@ class SoireeController extends Controller
     {
         $soiree = Soiree::findOrFail($id);
 
-        $review = $soiree->reviews()->updateOrCreate(
-            ['user_id' => $request->user()->id],
+        $review = Review::updateOrCreate(
+            ['user_id' => $request->user()->id, 'venue_id' => $soiree->venue_id],
             $request->validate([
                 'rating'  => 'required|integer|min:1|max:5',
                 'comment' => 'nullable|string|max:500',
@@ -558,6 +755,44 @@ class SoireeController extends Controller
         );
 
         return response()->json($review, 201);
+    }
+}
+```
+
+```php
+// VenueController.php
+class VenueController extends Controller
+{
+    public function __construct(private readonly VenueService $venues) {}
+
+    public function index(Request $request): JsonResponse
+    {
+        return response()->json(
+            $this->venues->list($request->only('mood', 'district', 'type'))
+        );
+    }
+
+    public function show(string $slug): JsonResponse
+    {
+        return response()->json($this->venues->getBySlug($slug));
+    }
+
+    public function crowd(string $slug): JsonResponse
+    {
+        return response()->json($this->venues->getCrowd($slug));
+    }
+}
+```
+
+```php
+// BadgeController.php
+class BadgeController extends Controller
+{
+    public function __construct(private readonly BadgeService $badges) {}
+
+    public function index(Request $request): JsonResponse
+    {
+        return response()->json($this->badges->forUser($request->user()));
     }
 }
 ```
@@ -588,9 +823,9 @@ class GenerateSoireeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'humeur' => ['required', 'in:chill,festif,romantique,culturel'],
-            'budget' => ['required', 'in:petit,moyen,libre'],
-            'date'   => ['sometimes', 'date_format:Y-m-d'],
+            'mood'     => ['required', 'in:festif,chill,decouverte,afterwork'],
+            'district' => ['sometimes', 'string', 'max:100'],
+            'date'     => ['sometimes', 'date_format:Y-m-d'],
         ];
     }
 }
@@ -613,10 +848,8 @@ class StoreFavoriteRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'type'        => ['required', 'in:event,place,playlist'],
-            'external_id' => ['required', 'string'],
-            'source'      => ['required', 'in:openagenda,foursquare,spotify'],
-            'label'       => ['required', 'string', 'max:255'],
+            'type'        => ['required', 'in:venue,event'],
+            'id'          => ['required', 'uuid'],
         ];
     }
 }
@@ -675,7 +908,7 @@ RateLimiter::for('mail', function (Request $request) {
 
 ## 9. Horizon
 
-Tu installe et configures Horizon. Les jobs eux-mêmes sont écrits par l'autre développeur,
+Tu installes et configures Horizon. Les jobs eux-mêmes sont écrits par l'autre développeur,
 mais la config des supervisors est ici.
 
 ### Installation
@@ -716,7 +949,7 @@ php artisan vendor:publish --provider="Laravel\Horizon\HorizonServiceProvider"
             'balance'      => 'simple',
             'maxProcesses' => 2,
             'tries'        => 2,
-            'timeout'      => 120,   // Mistral AI peut prendre jusqu'à 2min
+            'timeout'      => 120,   // l'IA peut prendre jusqu'à 2 min
         ],
     ],
 ],
@@ -735,7 +968,10 @@ Dashboard accessible sur `http://localhost:8000/horizon`.
 
 ---
 
-## 10. Docker
+## 10. Docker (dev local)
+
+> Le Dockerfile production et la config Coolify sont dans `PLAN_DEPLOIEMENT.md`.
+> Ici on documente uniquement le `docker-compose.yml` pour le développement local.
 
 ### `docker-compose.yml`
 
@@ -743,10 +979,10 @@ Dashboard accessible sur `http://localhost:8000/horizon`.
 services:
   app:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: docker/Dockerfile.dev
     volumes:
-      - ./backend:/var/www/html
+      - ./:/var/www/html
     depends_on:
       - postgres
       - redis
@@ -756,27 +992,29 @@ services:
     ports:
       - "8000:80"
     volumes:
-      - ./backend:/var/www/html
+      - ./:/var/www/html
       - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf
     depends_on:
       - app
 
   horizon:
     build:
-      context: ./backend
+      context: .
+      dockerfile: docker/Dockerfile.dev
     command: php artisan horizon
     volumes:
-      - ./backend:/var/www/html
+      - ./:/var/www/html
     depends_on:
       - redis
       - postgres
 
   scheduler:
     build:
-      context: ./backend
+      context: .
+      dockerfile: docker/Dockerfile.dev
     command: php artisan schedule:work
     volumes:
-      - ./backend:/var/www/html
+      - ./:/var/www/html
     depends_on:
       - redis
       - postgres
@@ -784,8 +1022,8 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: nantesvibes
-      POSTGRES_USER: nantes
+      POSTGRES_DB: noctambule
+      POSTGRES_USER: noctambule
       POSTGRES_PASSWORD: secret
     volumes:
       - pgdata:/var/lib/postgresql/data
@@ -801,23 +1039,21 @@ volumes:
   pgdata:
 ```
 
-### `Dockerfile` (backend/)
+### `docker/Dockerfile.dev`
 
 ```dockerfile
 FROM php:8.3-fpm-alpine
 
-RUN apk add --no-cache postgresql-dev \
+RUN apk add --no-cache postgresql-dev git unzip \
     && docker-php-ext-install pdo_pgsql pcntl
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
-COPY . .
-
-RUN composer install --no-dev --optimize-autoloader \
-    && php artisan config:cache \
-    && php artisan route:cache
 ```
+
+> Pas de `composer install` dans le Dockerfile dev — le code est monté en volume,
+> et tu lances `composer install` depuis le container avec `docker compose exec app composer install`.
 
 ---
 
@@ -838,8 +1074,8 @@ php artisan vendor:publish --provider="L5Swagger\L5SwaggerServiceProvider"
         'api' => '/api/documentation',
     ],
     'info' => [
-        'title'       => 'NantesVibes API',
-        'description' => 'API de génération de soirées pour les Nantais',
+        'title'       => 'NOCTAMBULE API',
+        'description' => 'API de la plateforme événementielle nocturne nantaise',
         'version'     => '1.0.0',
     ],
 ],
@@ -850,9 +1086,9 @@ php artisan vendor:publish --provider="L5Swagger\L5SwaggerServiceProvider"
 ```php
 /**
  * @OA\Info(
- *     title="NantesVibes API",
+ *     title="NOCTAMBULE API",
  *     version="1.0.0",
- *     description="API de génération de soirées pour les Nantais"
+ *     description="API de la plateforme événementielle nocturne nantaise"
  * )
  * @OA\SecurityScheme(
  *     securityScheme="sanctum",
@@ -896,12 +1132,13 @@ php artisan l5-swagger:generate   # régénérer la spec
 ## 12. Checklist
 
 ### Phase 1 — Setup & BDD
-- [ ] Créer le projet Laravel (`laravel new backend --pest`)
+- [ ] Créer le projet Laravel 12 (`composer create-project laravel/laravel backend`)
 - [ ] Configurer `.env` (PostgreSQL, Redis, drivers)
 - [ ] Publier et configurer Sanctum
-- [ ] Écrire les 4 migrations (users, soirees, favorites, reviews)
-- [ ] Écrire les 4 modèles Eloquent avec relations
-- [ ] Vérifier `php artisan migrate`
+- [ ] Écrire les 8 migrations (users, venues, events, soirees, favorites, reviews, badges, user_badges)
+- [ ] Écrire les 8 modèles Eloquent avec relations
+- [ ] Écrire les 3 seeders (VenueSeeder, BadgeSeeder, EventSeeder)
+- [ ] Vérifier `php artisan migrate --seed`
 
 ### Phase 2 — Auth
 - [ ] `AuthController` (register, login, logout, me) + Form Requests
@@ -912,12 +1149,12 @@ php artisan l5-swagger:generate   # régénérer la spec
 ### Phase 3 — Routes & Controllers squelettes
 - [ ] Écrire `routes/api.php` complet
 - [ ] Créer tous les controllers avec méthodes vides (retournent `[]` pour l'instant)
-- [ ] Tous les Form Requests (GenerateSoireeRequest, ShareSoireeRequest, StoreFavoriteRequest)
+- [ ] Form Requests (GenerateSoireeRequest, ShareSoireeRequest, StoreFavoriteRequest)
 - [ ] Middleware `SecurityHeaders` + enregistrement
 - [ ] CORS configuré
 - [ ] Rate limiters dans `AppServiceProvider`
 
-### Phase 4 — Horizon & Docker
+### Phase 4 — Horizon & Docker dev
 - [ ] Installer et configurer Horizon (`config/horizon.php`)
 - [ ] Vérifier dashboard `/horizon` accessible
 - [ ] `docker-compose.yml` fonctionnel (app + nginx + horizon + scheduler + postgres + redis)
@@ -931,4 +1168,4 @@ php artisan l5-swagger:generate   # régénérer la spec
 
 ---
 
-*Dernière mise à jour : 2026-04-09*
+*Dernière mise à jour : 2026-04-29*
