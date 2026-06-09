@@ -21,6 +21,15 @@ class ImportEvents extends Command
     /** Taille de page demandée à l'API OpenDataSoft. */
     private const PAGE_SIZE = 100;
 
+    /**
+     * Types d'évènements retenus : l'agenda métropolitain mélange tout (crèches,
+     * marchés, ateliers…). On ne garde que la programmation « nightlife »
+     * (concerts / musique) pour rester fidèle au concept NOCTAMBULE.
+     *
+     * @var list<string>
+     */
+    private const NIGHTLIFE_TYPES = ['Concert - Musique'];
+
     public function handle(): int
     {
         $venues = 0;
@@ -93,11 +102,19 @@ class ImportEvents extends Command
         $records = [];
         $offset = 0;
 
+        // Clause ODSQL : programmation à venir (date >= aujourd'hui), restreinte
+        // aux types nightlife. `order_by date` remonte d'abord les plus proches.
+        $typeClause = collect(self::NIGHTLIFE_TYPES)
+            ->map(fn (string $type) => "types_libelles = '".str_replace("'", "''", $type)."'")
+            ->implode(' or ');
+        $where = "date >= date'".Carbon::now()->toDateString()."' and ({$typeClause})";
+
         while (count($records) < self::MAX_RECORDS) {
             $response = Http::get($baseUrl, [
                 'limit' => self::PAGE_SIZE,
                 'offset' => $offset,
                 'order_by' => 'date',
+                'where' => $where,
             ]);
 
             if ($response->failed()) {

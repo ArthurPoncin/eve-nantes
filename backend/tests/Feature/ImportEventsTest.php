@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Event;
 use App\Models\Venue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -129,6 +130,22 @@ class ImportEventsTest extends TestCase
         $lieuUnique = Venue::where('slug', 'le-lieu-unique')->firstOrFail();
         $this->assertSame('44000', $lieuUnique->postal_code);
         $this->assertSame('Nantes', $lieuUnique->city);
+    }
+
+    public function test_it_requests_only_upcoming_nightlife_events(): void
+    {
+        Http::fake($this->fakeRecords());
+
+        $this->artisan('events:import')->assertExitCode(0);
+
+        // L'import ne doit demander à l'open-data que la programmation à venir
+        // (date >= aujourd'hui) et de type concert/musique — pas tout l'agenda.
+        Http::assertSent(function (Request $request) {
+            $url = urldecode($request->url());
+
+            return str_contains($url, "types_libelles = 'Concert - Musique'")
+                && str_contains($url, 'date >= date');
+        });
     }
 
     public function test_it_is_idempotent_when_run_twice(): void
