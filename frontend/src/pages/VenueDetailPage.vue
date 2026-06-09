@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { fetchVenue } from '@/api/venues'
+import FavoriteButton from '@/components/FavoriteButton.vue'
 import type { VenueDetail } from '@/types/venue'
 
 const route = useRoute()
@@ -91,6 +92,7 @@ onMounted(() => {
           >
             {{ venue.name }}
           </h1>
+          <FavoriteButton :venue="venue" class="ml-auto" />
         </div>
 
         <dl class="mt-6 flex flex-col gap-4">

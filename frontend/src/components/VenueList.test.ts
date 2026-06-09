@@ -1,7 +1,16 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { mount, RouterLinkStub } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
 import VenueList from './VenueList.vue'
 import type { Venue } from '@/types/venue'
+
+// VenueList renders FavoriteButton, which reads the auth + favorites Pinia
+// stores, so mounting now requires an active Pinia. Unauthenticated (no token
+// in localStorage) the button renders nothing, so existing assertions hold.
+beforeEach(() => {
+  setActivePinia(createPinia())
+  localStorage.clear()
+})
 
 function mountVenueList(venues: Venue[]) {
   return mount(VenueList, {

@@ -19,6 +19,12 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/favoris',
+    name: 'favoris',
+    component: () => import('@/pages/FavoritesPage.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/venues/:slug',
     name: 'venue-detail',
     component: () => import('@/pages/VenueDetailPage.vue'),

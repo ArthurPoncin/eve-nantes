@@ -3,6 +3,8 @@ import { onMounted, ref } from 'vue'
 import WeatherWidget from '@/components/WeatherWidget.vue'
 import VenueList from '@/components/VenueList.vue'
 import { fetchVenues } from '@/api/venues'
+import { useAuthStore } from '@/stores/auth'
+import { useFavoritesStore } from '@/stores/favorites'
 import type { Venue } from '@/types/venue'
 
 const moods = [
@@ -42,6 +44,12 @@ function selectMood(moodId: string) {
 
 onMounted(() => {
   loadVenues()
+  // L'utilisateur connecté arrive ici après le login : on charge ses favoris
+  // pour que les cœurs reflètent l'état serveur. Fire-and-forget.
+  const auth = useAuthStore()
+  if (auth.isAuthenticated) {
+    useFavoritesStore().load().catch(() => {})
+  }
 })
 </script>
 

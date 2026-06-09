@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import FavoriteButton from './FavoriteButton.vue'
 import type { Venue } from '@/types/venue'
 
 defineProps<{ venues: Venue[] }>()
@@ -25,10 +26,11 @@ function moodDotClass(mood: string | null): string {
       v-for="venue in venues"
       :key="venue.id"
       data-testid="venue-item"
+      class="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 pr-2 transition-colors hover:border-white/20"
     >
       <RouterLink
         :to="`/venues/${venue.slug}`"
-        class="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left transition-colors hover:border-white/20"
+        class="flex flex-1 items-center gap-3 px-4 py-3 text-left"
       >
         <span
           data-testid="venue-mood-dot"
@@ -48,6 +50,7 @@ function moodDotClass(mood: string | null): string {
           </span>
         </div>
       </RouterLink>
+      <FavoriteButton :venue="venue" />
     </li>
   </ul>
 </template>
