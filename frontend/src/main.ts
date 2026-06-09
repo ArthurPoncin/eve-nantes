@@ -1,14 +1,18 @@
 import { createApp } from 'vue'
+import { createPinia } from 'pinia'
 import './style.css'
 import App from './App.vue'
 import { router } from '@/router'
+import { useAuthStore } from '@/stores/auth'
 
-async function bootstrap(): Promise<void> {
-  if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCKS === 'true') {
-    const { worker } = await import('@/mocks/browser')
-    await worker.start({ onUnhandledRequest: 'bypass' })
-  }
-  createApp(App).use(router).mount('#app')
+const app = createApp(App)
+app.use(createPinia())
+app.use(router)
+
+// Réhydrate l'utilisateur courant si un token Sanctum est déjà persisté.
+const auth = useAuthStore()
+if (auth.isAuthenticated) {
+  auth.loadMe().catch(() => auth.logout())
 }
 
-bootstrap()
+app.mount('#app')
