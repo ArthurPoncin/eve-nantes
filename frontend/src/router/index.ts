@@ -18,6 +18,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/pages/ProfilePage.vue'),
     meta: { requiresAuth: true },
   },
+  {
+    path: '/venues/:slug',
+    name: 'venue-detail',
+    component: () => import('@/pages/VenueDetailPage.vue'),
+  },
 ]
 
 export const router = createRouter({

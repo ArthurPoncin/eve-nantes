@@ -1,7 +1,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
-import { fetchVenues } from './venues'
+import { fetchVenue, fetchVenues } from './venues'
 
 const server = setupServer()
 
@@ -71,5 +71,51 @@ describe('api-client.fetchVenues', () => {
     )
 
     await expect(fetchVenues()).rejects.toThrow()
+  })
+})
+
+const sampleVenueDetail = {
+  ...sampleVenue,
+  id: 2,
+  name: 'Stereolux',
+  slug: 'stereolux',
+  events: [
+    {
+      id: 10,
+      title: 'Nuit Électronique',
+      slug: 'nuit-electronique',
+      description: 'Une nuit de musique électronique.',
+      starts_at: '2026-06-20T21:00:00.000Z',
+      ends_at: '2026-06-21T04:00:00.000Z',
+      price_cents: 1500,
+    },
+  ],
+}
+
+describe('api-client.fetchVenue', () => {
+  it('GETs /api/v1/venues/{slug} and returns the unwrapped venue with its events', async () => {
+    let requestUrl = ''
+    server.use(
+      http.get('*/api/v1/venues/stereolux', ({ request }) => {
+        requestUrl = request.url
+        return HttpResponse.json({ data: sampleVenueDetail })
+      }),
+    )
+
+    const venue = await fetchVenue('stereolux')
+
+    expect(new URL(requestUrl).pathname).toBe('/api/v1/venues/stereolux')
+    expect(venue).toEqual(sampleVenueDetail)
+    expect(venue.events).toHaveLength(1)
+  })
+
+  it('rejects when the slug is unknown (404)', async () => {
+    server.use(
+      http.get('*/api/v1/venues/inconnu', () =>
+        HttpResponse.json({ error: 'not found' }, { status: 404 }),
+      ),
+    )
+
+    await expect(fetchVenue('inconnu')).rejects.toThrow()
   })
 })

@@ -1,3 +1,5 @@
+import type { EventSummary } from './event'
+
 export interface Venue {
   id: number
   name: string
@@ -9,4 +11,8 @@ export interface Venue {
   capacity: number | null
   latitude: number | null
   longitude: number | null
+}
+
+export interface VenueDetail extends Venue {
+  events: EventSummary[]
 }

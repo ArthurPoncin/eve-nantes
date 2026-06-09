@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, RouterLinkStub } from '@vue/test-utils'
 import VenueList from './VenueList.vue'
 import type { Venue } from '@/types/venue'
+
+function mountVenueList(venues: Venue[]) {
+  return mount(VenueList, {
+    props: { venues },
+    global: { stubs: { RouterLink: RouterLinkStub } },
+  })
+}
 
 function makeVenue(overrides: Partial<Venue> = {}): Venue {
   return {
@@ -29,19 +36,19 @@ describe('VenueList', () => {
   ]
 
   it('renders one item per venue', () => {
-    const wrapper = mount(VenueList, { props: { venues } })
+    const wrapper = mountVenueList(venues)
     expect(wrapper.findAll('[data-testid="venue-item"]')).toHaveLength(5)
   })
 
   it('renders the venue names', () => {
-    const wrapper = mount(VenueList, { props: { venues } })
+    const wrapper = mountVenueList(venues)
     expect(wrapper.text()).toContain('Le Lieu Unique')
     expect(wrapper.text()).toContain('Café Cult')
     expect(wrapper.text()).toContain('Lieu Mystère')
   })
 
   it('applies the matching bg-mood-* class to each mood dot', () => {
-    const wrapper = mount(VenueList, { props: { venues } })
+    const wrapper = mountVenueList(venues)
     const dots = wrapper.findAll('[data-testid="venue-mood-dot"]')
 
     expect(dots[0]!.classes()).toContain('bg-mood-festif')
@@ -51,15 +58,23 @@ describe('VenueList', () => {
   })
 
   it('falls back to a neutral dot class for a null mood', () => {
-    const wrapper = mount(VenueList, { props: { venues } })
+    const wrapper = mountVenueList(venues)
     const dots = wrapper.findAll('[data-testid="venue-mood-dot"]')
 
     expect(dots[4]!.classes()).toContain('bg-white/20')
     expect(dots[4]!.classes()).not.toContain('bg-mood-festif')
   })
 
+  it('links each venue to its detail page', () => {
+    const wrapper = mountVenueList(venues)
+    const links = wrapper.findAllComponents(RouterLinkStub)
+
+    expect(links).toHaveLength(5)
+    expect(links[0]!.props('to')).toBe('/venues/le-lieu-unique')
+  })
+
   it('renders nothing when given an empty list', () => {
-    const wrapper = mount(VenueList, { props: { venues: [] } })
+    const wrapper = mountVenueList([])
     expect(wrapper.findAll('[data-testid="venue-item"]')).toHaveLength(0)
   })
 })
