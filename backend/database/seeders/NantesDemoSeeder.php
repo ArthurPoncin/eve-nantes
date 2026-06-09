@@ -20,6 +20,7 @@ class NantesDemoSeeder extends Seeder
             'postal_code' => '44200',
             'city' => 'Nantes',
             'capacity' => 1200,
+            'mood' => 'decouverte',
         ]);
 
         $orga = Organizer::query()->create([
@@ -47,5 +48,10 @@ class NantesDemoSeeder extends Seeder
         ]);
 
         $event->categories()->attach($music->id);
+
+        // Lieux variés pour alimenter le filtre par ambiance sur la landing.
+        foreach (Venue::MOODS as $mood) {
+            Venue::factory()->count(3)->create(['mood' => $mood]);
+        }
     }
 }
