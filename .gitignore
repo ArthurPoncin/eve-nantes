@@ -9,6 +9,9 @@ Thumbs.db
 # Tooling artifacts
 .playwright-mcp/
 
+# Dépendances (les deps backend vivent dans backend/vendor)
+/vendor
+
 # Direct envs (each subproject also has its own .gitignore)
 .env
 .env.local

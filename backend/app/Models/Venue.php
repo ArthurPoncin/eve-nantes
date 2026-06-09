@@ -21,6 +21,12 @@ class Venue extends Model
         'longitude',
     ];
 
+    protected $casts = [
+        'capacity' => 'integer',
+        'latitude' => 'float',
+        'longitude' => 'float',
+    ];
+
     public function events(): HasMany
     {
         return $this->hasMany(Event::class);

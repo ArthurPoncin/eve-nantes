@@ -9,9 +9,11 @@ RUN apk add --no-cache \
         oniguruma-dev \
         icu-dev \
         postgresql-client \
+        sqlite-dev \
     && docker-php-ext-install \
         pdo \
         pdo_pgsql \
+        pdo_sqlite \
         pcntl \
         bcmath \
         zip \
