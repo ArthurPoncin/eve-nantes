@@ -47,4 +47,51 @@ class VenuesEndpointTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.0.mood', 'festif');
     }
+
+    public function test_it_filters_venues_by_mood(): void
+    {
+        Venue::create([
+            'name' => 'Le Ferrailleur',
+            'slug' => 'le-ferrailleur',
+            'address_line' => '21 Quai des Antilles',
+            'postal_code' => '44200',
+            'mood' => 'festif',
+        ]);
+
+        Venue::create([
+            'name' => 'La Cantine',
+            'slug' => 'la-cantine',
+            'address_line' => '12 Quai de la Fosse',
+            'postal_code' => '44000',
+            'mood' => 'chill',
+        ]);
+
+        $this->getJson('/api/v1/venues?mood=festif')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.mood', 'festif');
+    }
+
+    public function test_it_returns_all_venues_without_mood_filter(): void
+    {
+        Venue::create([
+            'name' => 'Le Ferrailleur',
+            'slug' => 'le-ferrailleur',
+            'address_line' => '21 Quai des Antilles',
+            'postal_code' => '44200',
+            'mood' => 'festif',
+        ]);
+
+        Venue::create([
+            'name' => 'La Cantine',
+            'slug' => 'la-cantine',
+            'address_line' => '12 Quai de la Fosse',
+            'postal_code' => '44000',
+            'mood' => 'chill',
+        ]);
+
+        $this->getJson('/api/v1/venues')
+            ->assertOk()
+            ->assertJsonCount(2, 'data');
+    }
 }
