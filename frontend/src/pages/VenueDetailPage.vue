@@ -51,8 +51,19 @@ function moodChipClass(mood: string | null): string {
 function moodGlowClass(mood: string | null): string {
   return (mood && MOOD_GLOW[mood]) || 'bg-violet'
 }
+// Bordure teintée pour mettre en avant le prochain événement (carte « featured »).
+const MOOD_BORDER: Record<string, string> = {
+  festif: 'border-pink/40',
+  chill: 'border-cyan/40',
+  decouverte: 'border-violet-bright/40',
+  afterwork: 'border-gold/40',
+}
+
 function moodLabel(mood: string | null): string {
   return (mood && MOOD_LABEL[mood]) || ''
+}
+function moodBorderClass(mood: string | null): string {
+  return (mood && MOOD_BORDER[mood]) || 'border-hairline'
 }
 
 const venue = ref<VenueDetail | null>(null)
@@ -295,14 +306,23 @@ onMounted(() => {
             v-for="(event, index) in venue.events"
             :key="event.id"
             data-testid="venue-event"
-            class="glass rounded-2xl border border-hairline bg-glass p-4 transition hover:border-hairline-bright"
+            class="glass rounded-2xl bg-glass p-4 transition"
+            :class="
+              index === 0
+                ? `border ${moodBorderClass(venue.mood)}`
+                : 'border border-hairline hover:border-hairline-bright'
+            "
           >
             <div class="flex items-center justify-between gap-3">
               <span
-                class="font-mono text-[10px] uppercase tracking-[0.16em]"
-                :class="index === 0 ? 'text-pink' : 'text-text-3'"
+                v-if="index === 0"
+                class="flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.16em]"
+                :class="moodChipClass(venue.mood)"
               >
-                {{ index === 0 ? 'Prochainement' : formatDay(event.starts_at) }}
+                ✦ Prochainement
+              </span>
+              <span v-else class="font-mono text-[10px] uppercase tracking-[0.16em] text-text-3">
+                {{ formatDay(event.starts_at) }}
               </span>
               <span
                 class="shrink-0 rounded-full border border-hairline px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.16em] text-text-2"
@@ -310,7 +330,12 @@ onMounted(() => {
                 {{ formatPrice(event.price_cents) }}
               </span>
             </div>
-            <p class="mt-2 font-serif text-lg italic text-text">{{ event.title }}</p>
+            <p
+              class="mt-2 font-serif italic text-text"
+              :class="index === 0 ? 'text-2xl' : 'text-lg'"
+            >
+              {{ event.title }}
+            </p>
             <p class="mt-0.5 font-mono text-[11px] text-text-3">{{ formatRange(event) }}</p>
             <p v-if="event.description" class="mt-2 line-clamp-3 text-sm text-text-2">
               {{ event.description }}
