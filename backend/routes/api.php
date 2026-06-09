@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\VenueController;
 use App\Http\Controllers\WeatherController;
 use Illuminate\Support\Facades\Route;
@@ -21,5 +22,11 @@ Route::prefix('v1')->group(function (): void {
             Route::get('me', [AuthController::class, 'me']);
             Route::post('logout', [AuthController::class, 'logout']);
         });
+    });
+
+    Route::middleware('auth:sanctum')->group(function (): void {
+        Route::get('favorites', [FavoriteController::class, 'index']);
+        Route::post('venues/{venue}/favorite', [FavoriteController::class, 'store']);
+        Route::delete('venues/{venue}/favorite', [FavoriteController::class, 'destroy']);
     });
 });
