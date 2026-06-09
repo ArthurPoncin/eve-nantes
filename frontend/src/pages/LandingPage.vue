@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import HeroBackdrop from '@/components/HeroBackdrop.vue'
 import WeatherWidget from '@/components/WeatherWidget.vue'
 import VenueList from '@/components/VenueList.vue'
 import { fetchVenues } from '@/api/venues'
@@ -89,10 +90,14 @@ onMounted(() => {
 </script>
 
 <template>
-  <main
-    class="mx-auto flex w-full max-w-5xl flex-col items-center gap-9 px-6 pb-24 pt-16 text-center"
-  >
-    <p class="font-mono text-[11px] uppercase tracking-[0.3em] text-text-3">Nantes · Nightlife</p>
+  <main class="w-full pb-24">
+    <!-- HERO plein cadre : décor (astre couchant + skyline) en fond, contenu centré -->
+    <section class="relative isolate overflow-hidden">
+      <HeroBackdrop class="absolute inset-0 z-0" />
+      <div
+        class="relative z-10 mx-auto flex w-full max-w-5xl flex-col items-center gap-9 px-6 pb-20 pt-16 text-center"
+      >
+        <p class="font-mono text-[11px] uppercase tracking-[0.3em] text-text-3">Nantes · Nightlife</p>
     <h1 class="max-w-3xl font-serif text-5xl italic leading-[1.05] text-text md:text-7xl">
       La nuit <span class="text-pink">est à toi</span>, ce soir.
     </h1>
@@ -140,9 +145,13 @@ onMounted(() => {
       </li>
     </ul>
 
-    <WeatherWidget class="w-full max-w-xs" />
+        <WeatherWidget class="w-full max-w-xs" />
+      </div>
+    </section>
 
-    <section data-testid="venue-list" class="w-full text-left">
+    <!-- LISTE des lieux -->
+    <div class="mx-auto w-full max-w-5xl px-6 pt-8">
+      <section data-testid="venue-list" class="w-full text-left">
       <div
         v-if="!isLoading && !hasError && filteredVenues.length > 0"
         class="mb-4 flex items-baseline justify-between"
@@ -185,6 +194,7 @@ onMounted(() => {
           + {{ hiddenCount }} autres lieux · affine avec la recherche ou l'ambiance
         </p>
       </template>
-    </section>
+      </section>
+    </div>
   </main>
 </template>
