@@ -23,6 +23,7 @@ class VenueController extends Controller
 
         return VenueResource::collection(
             Venue::query()
+                ->with('nextEvent')
                 ->when(
                     $validated['mood'] ?? null,
                     fn ($query, $mood) => $query->where('mood', $mood)

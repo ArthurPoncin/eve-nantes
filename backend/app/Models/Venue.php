@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Venue extends Model
 {
@@ -39,6 +41,22 @@ class Venue extends Model
     public function events(): HasMany
     {
         return $this->hasMany(Event::class);
+    }
+
+    /**
+     * Le prochain evenement publie a venir (le plus proche dans le temps).
+     *
+     * Permet d'afficher « ce qui arrive » sur les cartes de la liste sans
+     * charger toute la programmation de chaque lieu.
+     */
+    public function nextEvent(): HasOne
+    {
+        return $this->hasOne(Event::class)->ofMany(
+            ['starts_at' => 'min'],
+            fn (Builder $query) => $query
+                ->where('is_published', true)
+                ->where('starts_at', '>=', now())
+        );
     }
 }
 

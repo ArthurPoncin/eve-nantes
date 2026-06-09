@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Event;
 use App\Models\Venue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -100,5 +101,89 @@ class VenuesEndpointTest extends TestCase
         $this->getJson('/api/v1/venues?mood=banger')
             ->assertStatus(422)
             ->assertJsonValidationErrors('mood');
+    }
+
+    public function test_it_includes_the_next_upcoming_published_event_on_each_venue(): void
+    {
+        $venue = Venue::create([
+            'name' => 'Stereolux',
+            'slug' => 'stereolux',
+            'address_line' => '4 Boulevard Leon Bureau',
+            'postal_code' => '44200',
+            'city' => 'Nantes',
+        ]);
+
+        // Evenement passe et publie : doit etre ignore.
+        Event::create([
+            'title' => 'Concert passe',
+            'slug' => 'concert-passe',
+            'description' => 'Deja termine.',
+            'starts_at' => now()->subWeek(),
+            'price_cents' => 1500,
+            'is_published' => true,
+            'venue_id' => $venue->id,
+        ]);
+
+        // Evenement a venir plus lointain : pas le prochain.
+        Event::create([
+            'title' => 'Concert lointain',
+            'slug' => 'concert-lointain',
+            'description' => 'Plus tard.',
+            'starts_at' => now()->addWeeks(3),
+            'price_cents' => 2000,
+            'is_published' => true,
+            'venue_id' => $venue->id,
+        ]);
+
+        // Evenement a venir le plus proche : le prochain attendu.
+        Event::create([
+            'title' => 'Concert imminent',
+            'slug' => 'concert-imminent',
+            'description' => 'Bientot.',
+            'starts_at' => now()->addDay(),
+            'ends_at' => now()->addDay()->addHours(3),
+            'price_cents' => 1800,
+            'is_published' => true,
+            'venue_id' => $venue->id,
+        ]);
+
+        // Brouillon plus proche encore : non publie, doit etre ignore.
+        Event::create([
+            'title' => 'Brouillon',
+            'slug' => 'brouillon',
+            'description' => 'Pas publie.',
+            'starts_at' => now()->addHours(2),
+            'is_published' => false,
+            'venue_id' => $venue->id,
+        ]);
+
+        $this->getJson('/api/v1/venues')
+            ->assertOk()
+            ->assertJsonPath('data.0.next_event.title', 'Concert imminent')
+            ->assertJsonPath('data.0.next_event.price_cents', 1800);
+    }
+
+    public function test_next_event_is_null_when_a_venue_has_no_upcoming_event(): void
+    {
+        $venue = Venue::create([
+            'name' => 'La Cantine',
+            'slug' => 'la-cantine',
+            'address_line' => '12 Quai de la Fosse',
+            'postal_code' => '44000',
+        ]);
+
+        Event::create([
+            'title' => 'Concert passe',
+            'slug' => 'concert-passe',
+            'description' => 'Termine.',
+            'starts_at' => now()->subDay(),
+            'price_cents' => 1500,
+            'is_published' => true,
+            'venue_id' => $venue->id,
+        ]);
+
+        $this->getJson('/api/v1/venues')
+            ->assertOk()
+            ->assertJsonPath('data.0.next_event', null);
     }
 }

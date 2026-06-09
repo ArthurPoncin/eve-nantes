@@ -86,4 +86,31 @@ describe('VenueList', () => {
     const wrapper = mountVenueList([])
     expect(wrapper.findAll('[data-testid="venue-item"]')).toHaveLength(0)
   })
+
+  it('shows the next upcoming event when the venue has one', () => {
+    const wrapper = mountVenueList([
+      makeVenue({
+        id: 9,
+        name: 'Stereolux',
+        next_event: {
+          id: 1,
+          title: 'Soirée Techno',
+          slug: 'soiree-techno',
+          description: 'Une nuit electro.',
+          starts_at: '2026-06-14T21:00:00.000Z',
+          ends_at: '2026-06-15T02:00:00.000Z',
+          price_cents: 1500,
+        },
+      }),
+    ])
+
+    const footer = wrapper.find('[data-testid="venue-next-event"]')
+    expect(footer.exists()).toBe(true)
+    expect(footer.text()).toContain('Soirée Techno')
+  })
+
+  it('omits the event footer when the venue has no upcoming event', () => {
+    const wrapper = mountVenueList([makeVenue({ id: 10, next_event: null })])
+    expect(wrapper.find('[data-testid="venue-next-event"]').exists()).toBe(false)
+  })
 })

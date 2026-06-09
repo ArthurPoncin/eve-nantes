@@ -36,6 +36,14 @@ function moodChipClass(mood: string | null): string {
 function moodLabel(mood: string | null): string {
   return (mood && MOOD_LABEL[mood]) || 'Lieu'
 }
+
+// « 14 juin · 21:00 » — date courte du prochain événement pour la carte.
+function formatEventDate(iso: string): string {
+  const d = new Date(iso)
+  const day = d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+  const time = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+  return `${day} · ${time}`
+}
 </script>
 
 <template>
@@ -71,6 +79,19 @@ function moodLabel(mood: string | null): string {
             {{ venue.city }}
           </span>
           <span class="line-clamp-1 text-sm text-text-2">{{ venue.address_line }}</span>
+        </div>
+
+        <div
+          v-if="venue.next_event"
+          data-testid="venue-next-event"
+          class="flex items-center gap-2 border-t border-hairline/70 pt-2.5"
+        >
+          <span
+            class="shrink-0 rounded-md bg-pink/15 px-1.5 py-1 font-mono text-[9px] uppercase tracking-[0.1em] text-pink-bright"
+          >
+            {{ formatEventDate(venue.next_event.starts_at) }}
+          </span>
+          <span class="line-clamp-1 text-[11px] text-text-2">{{ venue.next_event.title }}</span>
         </div>
       </RouterLink>
 
