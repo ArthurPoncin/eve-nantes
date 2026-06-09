@@ -22,6 +22,12 @@ async function onLogout(): Promise<void> {
       </RouterLink>
       <nav class="flex items-center gap-5">
         <RouterLink
+          to="/soiree"
+          class="hidden font-mono text-[11px] uppercase tracking-[0.18em] text-text-2 transition hover:text-text sm:inline"
+        >
+          Soirée
+        </RouterLink>
+        <RouterLink
           to="/explorer"
           class="font-mono text-[11px] uppercase tracking-[0.18em] text-text-2 transition hover:text-text"
         >

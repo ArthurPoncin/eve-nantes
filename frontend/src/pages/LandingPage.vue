@@ -105,6 +105,13 @@ onMounted(() => {
       Bars, clubs et événements nantais, recommandés selon ton humeur.
     </p>
 
+    <RouterLink
+      to="/soiree"
+      class="glow-pink rounded-full bg-pink px-7 py-3.5 font-mono text-[11px] uppercase tracking-[0.2em] text-white transition hover:bg-pink-bright"
+    >
+      ✨ Compose ma soirée
+    </RouterLink>
+
     <form
       class="glass flex w-full max-w-md items-center gap-2 rounded-full border border-hairline bg-glass py-1.5 pl-5 pr-1.5"
       @submit.prevent
