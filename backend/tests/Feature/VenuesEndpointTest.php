@@ -94,4 +94,11 @@ class VenuesEndpointTest extends TestCase
             ->assertOk()
             ->assertJsonCount(2, 'data');
     }
+
+    public function test_it_rejects_an_unknown_mood(): void
+    {
+        $this->getJson('/api/v1/venues?mood=banger')
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('mood');
+    }
 }

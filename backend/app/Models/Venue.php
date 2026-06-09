@@ -10,6 +10,9 @@ class Venue extends Model
 {
     use HasFactory;
 
+    /** @var list<string> Ambiances NOCTAMBULE possibles pour un lieu. */
+    public const MOODS = ['festif', 'chill', 'decouverte', 'afterwork'];
+
     protected $fillable = [
         'name',
         'slug',
