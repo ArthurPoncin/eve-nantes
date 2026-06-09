@@ -55,7 +55,7 @@ class ImportEvents extends Command
                     'city' => ($record['ville'] ?? null) ?: 'Nantes',
                     'latitude' => $record['latitude'] ?? null,
                     'longitude' => $record['longitude'] ?? null,
-                    'mood' => $this->moodFor($record['themes_libelles'] ?? null, $record['types_libelles'] ?? null),
+                    'mood' => $this->moodFor($record),
                 ]
             );
 
@@ -67,7 +67,7 @@ class ImportEvents extends Command
                 ['slug' => Str::slug($nom).'-'.$date],
                 [
                     'title' => $nom,
-                    'description' => ($record['description'] ?? null) ?: $nom,
+                    'description' => $this->cleanText($record['description'] ?? null) ?: $nom,
                     'starts_at' => Carbon::parse($date.' '.(($record['heure_debut'] ?? null) ?: '00:00')),
                     'ends_at' => ($record['heure_fin'] ?? null)
                         ? Carbon::parse($date.' '.$record['heure_fin'])
@@ -154,22 +154,31 @@ class ImportEvents extends Command
     }
 
     /**
-     * Déduit une ambiance NOCTAMBULE (Venue::MOODS) à partir des libellés de
-     * thèmes et de types, après mise en minuscules et désaccentuation.
+     * Déduit une ambiance NOCTAMBULE (Venue::MOODS) pour un évènement.
      *
-     * @param  list<string>|null  $themes
-     * @param  list<string>|null  $types
+     * Tous les enregistrements importés sont des concerts : on ne se fie donc
+     * pas au type, mais au GENRE musical détecté dans le titre/description
+     * (techno → festif, classique → chill, apéro → afterwork…). À défaut de
+     * mot-clé, l'heure de début départage pour garantir de la variété.
+     *
+     * @param  array<string, mixed>  $record
      */
-    private function moodFor(?array $themes, ?array $types): string
+    private function moodFor(array $record): string
     {
-        $haystack = Str::lower(
-            Str::ascii(implode(' ', array_merge($themes ?? [], $types ?? [])))
-        );
+        $themes = $record['themes_libelles'] ?? [];
+        $types = $record['types_libelles'] ?? [];
+        $haystack = Str::lower(Str::ascii(implode(' ', array_filter([
+            (string) ($record['nom'] ?? ''),
+            $this->cleanText($record['description'] ?? null),
+            is_array($themes) ? implode(' ', $themes) : '',
+            is_array($types) ? implode(' ', $types) : '',
+        ]))));
 
+        // L'ordre compte : on teste du plus spécifique au plus large.
         $map = [
-            'festif' => ['concert', 'musique', 'dj', 'club', 'soiree', 'festival', 'nuit'],
-            'afterwork' => ['bar', 'apero', 'afterwork', 'degustation', 'gastronomie'],
-            'chill' => ['detente', 'bien-etre', 'balade', 'nature', 'famille', 'enfance', 'atelier'],
+            'afterwork' => ['apero', 'afterwork', 'after work', '5 a 7', 'before', 'cocktail', 'degustation', 'brunch', 'aperitif'],
+            'chill' => ['classique', 'vocal', 'choeur', 'choral', 'chorale', 'opera', 'orgue', 'piano', 'jazz', 'acoustique', 'baroque', 'lyrique', 'quatuor', 'gospel', 'chanson', 'blues', 'folk', 'ambient', 'intimiste', 'berceuse', 'conte', 'symphoni', 'requiem', 'recital'],
+            'festif' => ['dj', 'club', 'techno', 'electro', 'house', 'dancefloor', 'bass', 'garage', 'dub', 'reggae', 'ska', 'funk', 'disco', 'hip hop', 'hip-hop', 'rap', 'latino', 'salsa', 'afrobeat', 'groove', 'rave', 'soiree', 'bal ', 'dancehall', 'punk', 'metal', 'rock'],
         ];
 
         foreach ($map as $mood => $keywords) {
@@ -180,7 +189,37 @@ class ImportEvents extends Command
             }
         }
 
+        // Repli sur l'heure (le genre prime) : tard = festif, soirée = afterwork.
+        // Journée / heure inconnue -> découverte (chill reste réservé aux genres
+        // calmes détectés ci-dessus, et les 4 ambiances restent peuplées).
+        $hour = (int) substr((string) ($record['heure_debut'] ?? ''), 0, 2);
+        if ($hour >= 22) {
+            return 'festif';
+        }
+        if ($hour >= 19) {
+            return 'afterwork';
+        }
+
         return 'decouverte';
+    }
+
+    /**
+     * Nettoie un texte HTML de l'open-data : balises de bloc -> espaces, puis
+     * suppression des balises restantes, décodage des entités et compactage des
+     * espaces (y compris les espaces insécables).
+     */
+    private function cleanText(?string $html): string
+    {
+        if (! $html) {
+            return '';
+        }
+
+        $text = preg_replace('/<\/?(p|br|div|h[1-6]|li|ul|ol)[^>]*>/i', ' ', $html);
+        $text = strip_tags((string) $text);
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $text = preg_replace('/[\s\x{00A0}]+/u', ' ', (string) $text);
+
+        return trim((string) $text);
     }
 
     /**

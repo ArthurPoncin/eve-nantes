@@ -148,6 +148,59 @@ class ImportEventsTest extends TestCase
         });
     }
 
+    public function test_it_strips_html_from_event_descriptions(): void
+    {
+        Http::fake([
+            'data.nantesmetropole.fr/*' => Http::response([
+                'results' => [[
+                    'nom' => 'Soiree test',
+                    'lieu' => 'Salle Test',
+                    'date' => '2026-07-10',
+                    'heure_debut' => '21:00',
+                    'description' => '<p>Super <strong>concert</strong>&nbsp;ce soir.</p><br /><p>Venez nombreux !</p>',
+                    'types_libelles' => ['Concert - Musique'],
+                ]],
+            ]),
+        ]);
+
+        $this->artisan('events:import')->assertExitCode(0);
+
+        $event = Event::firstOrFail();
+        $this->assertStringNotContainsString('<', $event->description);
+        $this->assertSame('Super concert ce soir. Venez nombreux !', $event->description);
+    }
+
+    public function test_it_derives_varied_moods_from_event_genre(): void
+    {
+        $make = fn (string $nom, string $lieu, string $desc, ?string $heure = '20:00'): array => [
+            'nom' => $nom,
+            'lieu' => $lieu,
+            'date' => '2026-07-10',
+            'heure_debut' => $heure,
+            'description' => $desc,
+            'types_libelles' => ['Concert - Musique'],
+        ];
+
+        Http::fake([
+            'data.nantesmetropole.fr/*' => Http::response([
+                'results' => [
+                    $make('Nuit techno', 'Le Club', '<p>Grosse soiree techno toute la nuit.</p>'),
+                    $make('Recital', 'La Salle', '<p>Musique classique au piano.</p>'),
+                    $make('Apero-concert', 'Le Bar', '<p>Apero en musique des 18h.</p>'),
+                    $make('Tour du monde', 'La Place', '<p>Musiques traditionnelles.</p>', null),
+                ],
+            ]),
+        ]);
+
+        $this->artisan('events:import')->assertExitCode(0);
+
+        // Le genre détecté dans le titre/description donne des moods variés.
+        $this->assertSame('festif', Venue::where('slug', 'le-club')->firstOrFail()->mood);
+        $this->assertSame('chill', Venue::where('slug', 'la-salle')->firstOrFail()->mood);
+        $this->assertSame('afterwork', Venue::where('slug', 'le-bar')->firstOrFail()->mood);
+        $this->assertSame('decouverte', Venue::where('slug', 'la-place')->firstOrFail()->mood);
+    }
+
     public function test_it_is_idempotent_when_run_twice(): void
     {
         Http::fake($this->fakeRecords());
