@@ -11,9 +11,10 @@ return [
     |
     */
 
-    'openweather' => [
-        'key' => env('OPENWEATHER_API_KEY'),
-        'city' => env('OPENWEATHER_CITY', 'Nantes,FR'),
+    // Météo via Open-Meteo : API gratuite, sans clé. Coordonnées = Nantes.
+    'open_meteo' => [
+        'latitude' => env('WEATHER_LATITUDE', 47.2184),
+        'longitude' => env('WEATHER_LONGITUDE', -1.5536),
     ],
 
     'nantes_open_data' => [
