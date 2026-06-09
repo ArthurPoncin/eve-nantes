@@ -26,11 +26,11 @@ function moodDotClass(mood: string | null): string {
       v-for="venue in venues"
       :key="venue.id"
       data-testid="venue-item"
-      class="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 pr-2 transition-colors hover:border-white/20"
+      class="glass flex items-center gap-2 rounded-2xl border border-hairline bg-glass pr-2 transition hover:border-hairline-bright"
     >
       <RouterLink
         :to="`/venues/${venue.slug}`"
-        class="flex flex-1 items-center gap-3 px-4 py-3 text-left"
+        class="flex flex-1 items-center gap-4 px-4 py-3 text-left"
       >
         <span
           data-testid="venue-mood-dot"
@@ -38,14 +38,14 @@ function moodDotClass(mood: string | null): string {
           :class="moodDotClass(venue.mood)"
           aria-hidden="true"
         />
-        <div class="flex flex-col">
-          <span class="font-serif text-lg italic text-ink-primary">
+        <div class="flex flex-col gap-0.5">
+          <span class="font-serif text-lg italic text-text">
             {{ venue.name }}
           </span>
-          <span class="font-mono text-[10px] uppercase tracking-widest text-ink-muted">
+          <span class="font-mono text-[10px] uppercase tracking-[0.16em] text-text-3">
             {{ venue.city }}
           </span>
-          <span class="text-sm text-ink-muted">
+          <span class="text-sm text-text-2">
             {{ venue.address_line }}
           </span>
         </div>

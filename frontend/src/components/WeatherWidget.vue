@@ -26,14 +26,10 @@ function iconUrl(icon: string): string {
   <section
     aria-label="Météo Nantes"
     data-testid="weather-widget"
-    class="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 px-5 py-4"
+    class="glass flex items-center gap-4 rounded-2xl border border-hairline bg-glass px-5 py-4"
   >
     <template v-if="isLoading">
-      <div
-        data-testid="weather-skeleton"
-        class="flex w-full items-center gap-4"
-        aria-hidden="true"
-      >
+      <div data-testid="weather-skeleton" class="flex w-full items-center gap-4" aria-hidden="true">
         <div class="h-12 w-12 animate-pulse rounded-full bg-white/10" />
         <div class="flex flex-1 flex-col gap-2">
           <div class="h-4 w-20 animate-pulse rounded bg-white/10" />
@@ -44,9 +40,10 @@ function iconUrl(icon: string): string {
     </template>
 
     <template v-else-if="hasError">
+      <span class="text-2xl" aria-hidden="true">🌙</span>
       <p
         data-testid="weather-error"
-        class="font-mono text-xs uppercase tracking-widest text-ink-muted"
+        class="font-mono text-[11px] uppercase tracking-[0.18em] text-text-3"
       >
         Météo indisponible
       </p>
@@ -60,14 +57,11 @@ function iconUrl(icon: string): string {
         width="48"
         height="48"
       />
-      <div class="flex flex-col">
-        <span
-          data-testid="weather-temp"
-          class="font-serif text-2xl italic text-ink-primary"
-        >
+      <div class="flex flex-col text-left">
+        <span data-testid="weather-temp" class="font-serif text-3xl italic text-text">
           {{ Math.round(weather.temp) }}°C
         </span>
-        <span data-testid="weather-condition" class="text-sm capitalize text-ink-muted">
+        <span data-testid="weather-condition" class="text-sm capitalize text-text-2">
           {{ weather.condition }}
         </span>
       </div>

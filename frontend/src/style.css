@@ -1,42 +1,112 @@
 @import 'tailwindcss';
 
 @theme {
+  /* Typographie (maquette) */
+  --font-sans: 'Space Grotesk', system-ui, sans-serif;
+  --font-serif: 'Instrument Serif', Georgia, serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* Encres & surfaces (maquette) */
+  --color-ink: #07060b;
+  --color-ink-2: #0e0c16;
+  --color-ink-3: #14111f;
+  --color-surface: #1a1628;
+  --color-surface-2: #221c36;
+
+  /* Texte (maquette) */
+  --color-text: #f5f1ff;
+  --color-text-2: #b7aed1;
+  --color-text-3: #6f6788;
+
+  /* Accents néon (+ variantes "bright") */
+  --color-pink: #ff2d92;
+  --color-pink-bright: #ff5bae;
+  --color-violet: #7c3aed;
+  --color-violet-bright: #a855f7;
+  --color-gold: #f5c56b;
+  --color-gold-bright: #ffd98a;
+  --color-cyan: #5eead4;
+
+  /* Ambiances = accents */
   --color-mood-festif: #ff2d92;
   --color-mood-chill: #5eead4;
   --color-mood-decouverte: #a855f7;
   --color-mood-afterwork: #f5c56b;
 
-  --color-surface-night: #050409;
+  /* Verre dépoli & filets */
+  --color-glass: rgba(26, 22, 40, 0.55);
+  --color-glass-strong: rgba(26, 22, 40, 0.78);
+  --color-hairline: rgba(255, 255, 255, 0.08);
+  --color-hairline-bright: rgba(255, 255, 255, 0.16);
+
+  /* Rayons */
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+
+  /* Alias rétro-compat (pages pas encore refondues) */
+  --color-ink-primary: #f5f1ff;
+  --color-ink-muted: #b7aed1;
+  --color-ink-subtle: #6f6788;
+  --color-surface-night: #07060b;
   --color-surface-night-soft: #0c0a14;
   --color-surface-night-elevated: #14111e;
   --color-surface-sunset: #1a0f1c;
   --color-surface-sunset-soft: #2a1622;
   --color-surface-sunset-elevated: #3a1d2a;
-
-  --color-ink-primary: #f5f3f7;
-  --color-ink-muted: #a39db0;
-  --color-ink-subtle: #6b6478;
-
-  --font-sans: 'Space Grotesk', system-ui, sans-serif;
-  --font-serif: 'Instrument Serif', Georgia, serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 }
 
 html {
-  background-color: var(--color-surface-night);
-  color: var(--color-ink-primary);
+  color: var(--color-text);
   font-family: var(--font-sans);
-}
-
-html[data-theme='sunset'] {
-  background-color: var(--color-surface-sunset);
+  -webkit-font-smoothing: antialiased;
 }
 
 body {
   margin: 0;
   min-height: 100vh;
+  background-color: var(--color-ink);
+  background-image:
+    radial-gradient(ellipse 60% 50% at 18% -5%, rgba(124, 58, 237, 0.35), transparent 70%),
+    radial-gradient(ellipse 50% 42% at 92% 10%, rgba(255, 45, 146, 0.26), transparent 70%),
+    radial-gradient(ellipse 70% 50% at 50% 108%, rgba(94, 234, 212, 0.1), transparent 70%);
+  background-attachment: fixed;
+}
+
+html[data-theme='sunset'] body {
+  background-image:
+    radial-gradient(ellipse 60% 50% at 18% -5%, rgba(245, 197, 107, 0.22), transparent 70%),
+    radial-gradient(ellipse 55% 45% at 90% 8%, rgba(255, 45, 146, 0.32), transparent 70%),
+    radial-gradient(ellipse 70% 50% at 50% 108%, rgba(124, 58, 237, 0.18), transparent 70%);
 }
 
 #app {
   min-height: 100vh;
+}
+
+/* Verre dépoli : flou seul, la couleur/bordure se composent via les utilitaires
+   Tailwind (bg-glass, border-hairline…) pour que hover/états fonctionnent. */
+.glass {
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+}
+.glass-strong {
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+}
+
+/* Halos néon */
+.glow-pink {
+  box-shadow: 0 0 24px rgba(255, 45, 146, 0.5), 0 0 48px rgba(255, 45, 146, 0.22);
+}
+.glow-violet {
+  box-shadow: 0 0 24px rgba(168, 85, 247, 0.45), 0 0 48px rgba(124, 58, 237, 0.22);
+}
+.glow-gold {
+  box-shadow: 0 0 24px rgba(245, 197, 107, 0.4);
+}
+.glow-cyan {
+  box-shadow: 0 0 24px rgba(94, 234, 212, 0.4);
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import WeatherWidget from '@/components/WeatherWidget.vue'
 import VenueList from '@/components/VenueList.vue'
 import { fetchVenues } from '@/api/venues'
@@ -8,16 +8,30 @@ import { useFavoritesStore } from '@/stores/favorites'
 import type { Venue } from '@/types/venue'
 
 const moods = [
-  { id: 'festif', label: 'Festif', dotClass: 'bg-mood-festif' },
-  { id: 'chill', label: 'Chill', dotClass: 'bg-mood-chill' },
-  { id: 'decouverte', label: 'Découverte', dotClass: 'bg-mood-decouverte' },
-  { id: 'afterwork', label: 'Afterwork', dotClass: 'bg-mood-afterwork' },
+  { id: 'festif', label: 'Festif', dot: 'bg-mood-festif', active: 'border-pink text-pink glow-pink' },
+  { id: 'chill', label: 'Chill', dot: 'bg-mood-chill', active: 'border-cyan text-cyan glow-cyan' },
+  {
+    id: 'decouverte',
+    label: 'Découverte',
+    dot: 'bg-mood-decouverte',
+    active: 'border-violet-bright text-violet-bright glow-violet',
+  },
+  { id: 'afterwork', label: 'Afterwork', dot: 'bg-mood-afterwork', active: 'border-gold text-gold glow-gold' },
 ] as const
 
 const venues = ref<Venue[]>([])
 const activeMood = ref<string | null>(null)
+const query = ref('')
 const isLoading = ref(true)
 const hasError = ref(false)
+
+const filteredVenues = computed(() => {
+  const q = query.value.trim().toLowerCase()
+  if (!q) return venues.value
+  return venues.value.filter(
+    (v) => v.name.toLowerCase().includes(q) || v.city.toLowerCase().includes(q),
+  )
+})
 
 async function loadVenues(mood?: string) {
   isLoading.value = true
@@ -56,17 +70,34 @@ onMounted(() => {
 
 <template>
   <main
-    class="flex min-h-[80vh] flex-col items-center justify-center gap-8 px-6 text-center"
+    class="mx-auto flex w-full max-w-5xl flex-col items-center gap-9 px-6 pb-24 pt-16 text-center"
   >
-    <p class="font-mono text-xs uppercase tracking-[0.3em] text-ink-muted">
-      La nuit nantaise
-    </p>
-    <h1 class="font-serif text-5xl italic leading-tight text-ink-primary md:text-7xl">
-      Recommandée pour toi
+    <p class="font-mono text-[11px] uppercase tracking-[0.3em] text-text-3">Nantes · Nightlife</p>
+    <h1 class="max-w-3xl font-serif text-5xl italic leading-[1.05] text-text md:text-7xl">
+      La nuit <span class="text-pink">est à toi</span>, ce soir.
     </h1>
-    <p class="max-w-md text-base text-ink-muted">
-      Choisis ton humeur, on s'occupe du reste.
+    <p class="max-w-md text-base text-text-2">
+      Bars, clubs et événements nantais, recommandés selon ton humeur.
     </p>
+
+    <form
+      class="glass flex w-full max-w-md items-center gap-2 rounded-full border border-hairline bg-glass py-1.5 pl-5 pr-1.5"
+      @submit.prevent
+    >
+      <input
+        v-model="query"
+        type="search"
+        placeholder="Bar, club, quartier…"
+        aria-label="Rechercher un lieu"
+        class="min-w-0 flex-1 bg-transparent text-sm text-text placeholder:text-text-3 focus:outline-none"
+      />
+      <span
+        class="glow-pink rounded-full bg-pink px-4 py-2 font-mono text-[10px] uppercase tracking-[0.18em] text-white"
+      >
+        Filtrer
+      </span>
+    </form>
+
     <ul class="flex flex-wrap items-center justify-center gap-3">
       <li v-for="mood in moods" :key="mood.id">
         <button
@@ -74,44 +105,45 @@ onMounted(() => {
           data-testid="mood-filter"
           :data-mood="mood.id"
           :aria-pressed="activeMood === mood.id"
-          class="flex items-center gap-2 rounded-full border px-3 py-1 font-mono text-[10px] uppercase tracking-widest transition-colors"
+          class="glass flex items-center gap-2 rounded-full border px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] transition"
           :class="
             activeMood === mood.id
-              ? 'border-white/40 bg-white/15 text-ink-primary'
-              : 'border-white/10 bg-white/5 text-ink-muted hover:border-white/20'
+              ? mood.active
+              : 'border-hairline bg-glass text-text-2 hover:border-hairline-bright hover:text-text'
           "
           @click="selectMood(mood.id)"
         >
-          <span class="h-2 w-2 rounded-full" :class="mood.dotClass" />
+          <span class="h-2 w-2 rounded-full" :class="mood.dot" />
           {{ mood.label }}
         </button>
       </li>
     </ul>
+
     <WeatherWidget class="w-full max-w-xs" />
 
-    <section data-testid="venue-list" class="w-full max-w-xl">
+    <section data-testid="venue-list" class="w-full max-w-xl text-left">
       <p
         v-if="isLoading"
         data-testid="venue-loading"
-        class="font-mono text-xs uppercase tracking-widest text-ink-muted"
+        class="text-center font-mono text-[11px] uppercase tracking-[0.18em] text-text-3"
       >
         Chargement des lieux…
       </p>
       <p
         v-else-if="hasError"
         data-testid="venue-error"
-        class="font-mono text-xs uppercase tracking-widest text-ink-muted"
+        class="text-center font-mono text-[11px] uppercase tracking-[0.18em] text-text-3"
       >
         Impossible de charger les lieux.
       </p>
       <p
-        v-else-if="venues.length === 0"
+        v-else-if="filteredVenues.length === 0"
         data-testid="venue-empty"
-        class="font-mono text-xs uppercase tracking-widest text-ink-muted"
+        class="text-center font-mono text-[11px] uppercase tracking-[0.18em] text-text-3"
       >
         Aucun lieu pour cette ambiance.
       </p>
-      <VenueList v-else :venues="venues" />
+      <VenueList v-else :venues="filteredVenues" />
     </section>
   </main>
 </template>

@@ -14,30 +14,34 @@ async function onLogout(): Promise<void> {
 
 <template>
   <div class="flex min-h-screen flex-col">
-    <header class="flex items-center justify-between border-b border-white/5 px-6 py-4">
-      <RouterLink to="/" class="font-serif text-2xl italic text-ink-primary">
+    <header
+      class="glass-strong sticky top-0 z-50 flex items-center justify-between border-b border-hairline bg-glass-strong px-6 py-4"
+    >
+      <RouterLink to="/" class="font-serif text-2xl italic tracking-tight text-text">
         NOCTAMBULE
       </RouterLink>
-      <div class="flex items-center gap-4">
+      <nav class="flex items-center gap-5">
         <template v-if="auth.isAuthenticated">
-          <span class="font-mono text-xs uppercase tracking-widest text-ink-muted">
+          <span
+            class="hidden font-mono text-[11px] uppercase tracking-[0.18em] text-text-3 sm:inline"
+          >
             {{ auth.user?.username }}
           </span>
           <RouterLink
             to="/favoris"
-            class="font-mono text-xs uppercase tracking-widest text-ink-muted transition hover:text-ink-primary"
+            class="font-mono text-[11px] uppercase tracking-[0.18em] text-text-2 transition hover:text-text"
           >
             Favoris
           </RouterLink>
           <RouterLink
             to="/profil"
-            class="font-mono text-xs uppercase tracking-widest text-ink-muted transition hover:text-ink-primary"
+            class="font-mono text-[11px] uppercase tracking-[0.18em] text-text-2 transition hover:text-text"
           >
             Profil
           </RouterLink>
           <button
             type="button"
-            class="font-mono text-xs uppercase tracking-widest text-ink-muted transition hover:text-ink-primary"
+            class="font-mono text-[11px] uppercase tracking-[0.18em] text-text-3 transition hover:text-pink-bright"
             @click="onLogout"
           >
             Déconnexion
@@ -46,12 +50,12 @@ async function onLogout(): Promise<void> {
         <RouterLink
           v-else
           to="/login"
-          class="font-mono text-xs uppercase tracking-widest text-ink-muted transition hover:text-ink-primary"
+          class="glow-pink rounded-full bg-pink px-4 py-1.5 font-mono text-[11px] uppercase tracking-[0.18em] text-white transition hover:bg-pink-bright"
         >
           Connexion
         </RouterLink>
         <ModeToggle />
-      </div>
+      </nav>
     </header>
     <slot />
   </div>
