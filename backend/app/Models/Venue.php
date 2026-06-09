@@ -31,6 +31,11 @@ class Venue extends Model
         'longitude' => 'float',
     ];
 
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
+
     public function events(): HasMany
     {
         return $this->hasMany(Event::class);

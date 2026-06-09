@@ -11,6 +11,7 @@ Route::prefix('v1')->group(function (): void {
     Route::get('weather', [WeatherController::class, 'index']);
     Route::get('events', [EventController::class, 'index']);
     Route::get('venues', [VenueController::class, 'index']);
+    Route::get('venues/{venue}', [VenueController::class, 'show']);
 
     Route::prefix('auth')->group(function (): void {
         Route::post('register', [AuthController::class, 'register']);

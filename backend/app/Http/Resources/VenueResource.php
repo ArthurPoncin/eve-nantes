@@ -23,6 +23,7 @@ class VenueResource extends JsonResource
             'capacity' => $this->capacity,
             'latitude' => $this->latitude,
             'longitude' => $this->longitude,
+            'events' => EventResource::collection($this->whenLoaded('events')),
         ];
     }
 }

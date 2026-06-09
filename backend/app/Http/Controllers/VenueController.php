@@ -31,4 +31,17 @@ class VenueController extends Controller
                 ->get()
         );
     }
+
+    /**
+     * Affiche un lieu (resolu par slug) avec ses evenements publies a venir.
+     */
+    public function show(Venue $venue): VenueResource
+    {
+        $venue->load(['events' => fn ($query) => $query
+            ->where('is_published', true)
+            ->where('starts_at', '>=', now())
+            ->orderBy('starts_at')]);
+
+        return new VenueResource($venue);
+    }
 }
