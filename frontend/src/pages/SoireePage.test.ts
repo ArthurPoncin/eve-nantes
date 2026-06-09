@@ -3,8 +3,10 @@ import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
 import type { Soiree } from '@/types/soiree'
 
 const generateSoireeMock = vi.fn()
+const shareSoireeMock = vi.fn()
 vi.mock('@/api/soiree', () => ({
   generateSoiree: (...args: unknown[]) => generateSoireeMock(...args),
+  shareSoiree: (...args: unknown[]) => shareSoireeMock(...args),
 }))
 
 import SoireePage from './SoireePage.vue'
@@ -98,5 +100,29 @@ describe('SoireePage', () => {
     await flushPromises()
 
     expect(wrapper.find('[data-testid="soiree-error"]').exists()).toBe(true)
+  })
+
+  it('shares the composed soiree by email', async () => {
+    generateSoireeMock.mockResolvedValue(sampleSoiree)
+    shareSoireeMock.mockResolvedValue(undefined)
+    const wrapper = mountPage()
+    await wrapper.find('[data-testid="soiree-mood"][data-mood="festif"]').trigger('click')
+    await flushPromises()
+
+    await wrapper.find('[data-testid="soiree-share-toggle"]').trigger('click')
+    await wrapper.find('[data-testid="soiree-share-form"] input').setValue('ami@example.com')
+    await wrapper.find('[data-testid="soiree-share-form"]').trigger('submit')
+    await flushPromises()
+
+    expect(shareSoireeMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        email: 'ami@example.com',
+        mood: 'festif',
+        venue_id: 1,
+        event_id: 9,
+        narrative: expect.stringContaining('la techno vibre'),
+      }),
+    )
+    expect(wrapper.find('[data-testid="soiree-share-sent"]').exists()).toBe(true)
   })
 })

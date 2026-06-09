@@ -17,6 +17,8 @@ Route::prefix('v1')->group(function (): void {
 
     // Cœur du service : compose une soirée (lieu + event + météo + narration IA).
     Route::post('soiree/generate', [SoireeController::class, 'generate']);
+    // Partage d'une soirée par email (Resend) — throttlé contre le spam.
+    Route::post('soiree/share', [SoireeController::class, 'share'])->middleware('throttle:10,1');
 
     Route::prefix('auth')->group(function (): void {
         Route::post('register', [AuthController::class, 'register']);

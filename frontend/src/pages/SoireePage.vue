@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { generateSoiree } from '@/api/soiree'
+import { generateSoiree, shareSoiree } from '@/api/soiree'
 import type { Soiree } from '@/types/soiree'
 
 const moods = [
@@ -28,6 +28,9 @@ const soiree = ref<Soiree | null>(null)
 const isLoading = ref(false)
 const hasError = ref(false)
 const notFound = ref(false)
+const shareOpen = ref(false)
+const shareEmail = ref('')
+const shareStatus = ref<'idle' | 'sending' | 'sent' | 'error'>('idle')
 
 async function compose(mood: string): Promise<void> {
   selectedMood.value = mood
@@ -35,6 +38,7 @@ async function compose(mood: string): Promise<void> {
   hasError.value = false
   notFound.value = false
   soiree.value = null
+  resetShare()
   try {
     soiree.value = await generateSoiree(mood)
   } catch (error: unknown) {
@@ -51,6 +55,31 @@ function reset(): void {
   soiree.value = null
   hasError.value = false
   notFound.value = false
+  resetShare()
+}
+
+function resetShare(): void {
+  shareOpen.value = false
+  shareEmail.value = ''
+  shareStatus.value = 'idle'
+}
+
+async function submitShare(): Promise<void> {
+  if (!soiree.value || !shareEmail.value.trim()) return
+  shareStatus.value = 'sending'
+  try {
+    await shareSoiree({
+      email: shareEmail.value.trim(),
+      mood: soiree.value.mood,
+      venue_id: soiree.value.venue.id,
+      event_id: soiree.value.event?.id ?? null,
+      narrative: soiree.value.narrative,
+      weather: soiree.value.weather,
+    })
+    shareStatus.value = 'sent'
+  } catch {
+    shareStatus.value = 'error'
+  }
 }
 
 function moodLabel(mood: string | null): string {
@@ -206,12 +235,58 @@ function weatherIcon(icon: string): string {
         </button>
         <button
           type="button"
+          data-testid="soiree-share-toggle"
+          class="rounded-full border border-cyan/40 px-5 py-3 font-mono text-[11px] uppercase tracking-[0.18em] text-cyan transition hover:bg-cyan/10"
+          @click="shareOpen = !shareOpen"
+        >
+          Partager par email
+        </button>
+        <button
+          type="button"
           class="rounded-full border border-hairline px-5 py-3 font-mono text-[11px] uppercase tracking-[0.18em] text-text-2 transition hover:border-hairline-bright hover:text-text"
           @click="reset"
         >
           Changer d'ambiance
         </button>
       </div>
+
+      <form
+        v-if="shareOpen"
+        data-testid="soiree-share-form"
+        class="mt-4 flex flex-col gap-2 sm:flex-row"
+        @submit.prevent="submitShare"
+      >
+        <input
+          v-model="shareEmail"
+          type="email"
+          required
+          placeholder="email d'un ami…"
+          aria-label="Email du destinataire"
+          class="glass min-w-0 flex-1 rounded-full border border-hairline bg-glass px-4 py-2.5 text-sm text-text placeholder:text-text-3 focus:outline-none"
+        />
+        <button
+          type="submit"
+          data-testid="soiree-share-submit"
+          :disabled="shareStatus === 'sending'"
+          class="shrink-0 rounded-full bg-pink px-5 py-2.5 font-mono text-[11px] uppercase tracking-[0.18em] text-white transition hover:bg-pink-bright disabled:opacity-50"
+        >
+          {{ shareStatus === 'sending' ? 'Envoi…' : 'Envoyer' }}
+        </button>
+      </form>
+      <p
+        v-if="shareStatus === 'sent'"
+        data-testid="soiree-share-sent"
+        class="mt-2 font-mono text-[11px] uppercase tracking-[0.16em] text-cyan"
+      >
+        Envoyé ✓ — ton ami·e reçoit la soirée par email.
+      </p>
+      <p
+        v-else-if="shareStatus === 'error'"
+        data-testid="soiree-share-error"
+        class="mt-2 font-mono text-[11px] uppercase tracking-[0.16em] text-text-3"
+      >
+        Échec de l'envoi, réessaie.
+      </p>
     </article>
   </main>
 </template>

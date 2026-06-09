@@ -29,4 +29,17 @@ return [
         'endpoint' => env('MISTRAL_ENDPOINT', 'https://api.mistral.ai/v1/chat/completions'),
     ],
 
+    // Envoi d'email (partage de soirée) via Resend. Clé dans .env (gitignored).
+    // En l'absence de domaine vérifié, n'utiliser que l'expéditeur de test Resend.
+    'resend' => [
+        'key' => env('RESEND_API_KEY'),
+        'from' => env('RESEND_FROM', 'NOCTAMBULE <onboarding@resend.dev>'),
+        'endpoint' => env('RESEND_ENDPOINT', 'https://api.resend.com/emails'),
+    ],
+
+    // URL du front (liens cliquables dans les emails).
+    'frontend' => [
+        'url' => env('FRONTEND_URL', 'http://localhost:5173'),
+    ],
+
 ];
