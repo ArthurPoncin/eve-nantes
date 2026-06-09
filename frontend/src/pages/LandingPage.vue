@@ -23,7 +23,8 @@ async function loadVenues(mood?: string) {
   isLoading.value = true
   hasError.value = false
   try {
-    venues.value = await fetchVenues(mood)
+    const result = await fetchVenues(mood)
+    venues.value = Array.isArray(result) ? result : []
   } catch {
     hasError.value = true
     venues.value = []
