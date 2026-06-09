@@ -16,6 +16,7 @@ class Venue extends Model
         'address_line',
         'postal_code',
         'city',
+        'mood',
         'capacity',
         'latitude',
         'longitude',

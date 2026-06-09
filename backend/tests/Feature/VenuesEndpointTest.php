@@ -32,4 +32,19 @@ class VenuesEndpointTest extends TestCase
             ->assertJsonPath('data.0.latitude', fn (mixed $value): bool => is_float($value) && abs($value - 47.2027) < 0.0001)
             ->assertJsonPath('data.0.longitude', fn (mixed $value): bool => is_float($value) && abs($value - (-1.565)) < 0.0001);
     }
+
+    public function test_it_exposes_the_venue_mood(): void
+    {
+        Venue::create([
+            'name' => 'Le Ferrailleur',
+            'slug' => 'le-ferrailleur',
+            'address_line' => '21 Quai des Antilles',
+            'postal_code' => '44200',
+            'mood' => 'festif',
+        ]);
+
+        $this->getJson('/api/v1/venues')
+            ->assertOk()
+            ->assertJsonPath('data.0.mood', 'festif');
+    }
 }
