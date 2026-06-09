@@ -23,6 +23,12 @@ async function onLogout(): Promise<void> {
           <span class="font-mono text-xs uppercase tracking-widest text-ink-muted">
             {{ auth.user?.username }}
           </span>
+          <RouterLink
+            to="/profil"
+            class="font-mono text-xs uppercase tracking-widest text-ink-muted transition hover:text-ink-primary"
+          >
+            Profil
+          </RouterLink>
           <button
             type="button"
             class="font-mono text-xs uppercase tracking-widest text-ink-muted transition hover:text-ink-primary"

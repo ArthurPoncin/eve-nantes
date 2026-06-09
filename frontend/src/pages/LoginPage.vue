@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { isAxiosError } from 'axios'
 import { useAuthStore } from '@/stores/auth'
 
@@ -8,6 +8,7 @@ type Mode = 'login' | 'register'
 
 const auth = useAuthStore()
 const router = useRouter()
+const route = useRoute()
 
 const mode = ref<Mode>('login')
 const isSubmitting = ref(false)
@@ -49,7 +50,9 @@ async function onSubmit(): Promise<void> {
     } else {
       await auth.login({ email: form.email, password: form.password })
     }
-    await router.push('/')
+    const { redirect } = route.query
+    const target = (Array.isArray(redirect) ? redirect[0] : redirect) ?? '/'
+    await router.push(target)
   } catch (error) {
     errorMessage.value = extractError(error)
   } finally {
