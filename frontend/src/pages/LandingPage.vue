@@ -33,12 +33,32 @@ const filteredVenues = computed(() => {
   )
 })
 
+// On présente une sélection (comme la maquette), pas l'annuaire complet :
+// la recherche et l'ambiance affinent la liste pour atteindre le reste.
+const VENUE_LIMIT = 18
+const displayedVenues = computed(() => filteredVenues.value.slice(0, VENUE_LIMIT))
+const hiddenCount = computed(() => Math.max(0, filteredVenues.value.length - VENUE_LIMIT))
+
+// Comptes par ambiance, figés depuis le chargement non filtré (pastilles).
+const moodCounts = ref<Record<string, number>>({})
+
+function moodLabelFor(id: string | null): string {
+  return moods.find((m) => m.id === id)?.label ?? 'Spots'
+}
+
 async function loadVenues(mood?: string) {
   isLoading.value = true
   hasError.value = false
   try {
     const result = await fetchVenues(mood)
     venues.value = Array.isArray(result) ? result : []
+    if (mood === undefined) {
+      const counts: Record<string, number> = {}
+      for (const item of venues.value) {
+        if (item.mood) counts[item.mood] = (counts[item.mood] ?? 0) + 1
+      }
+      moodCounts.value = counts
+    }
   } catch {
     hasError.value = true
     venues.value = []
@@ -115,13 +135,26 @@ onMounted(() => {
         >
           <span class="h-2 w-2 rounded-full" :class="mood.dot" />
           {{ mood.label }}
+          <span v-if="moodCounts[mood.id]" class="ml-0.5 opacity-60">{{ moodCounts[mood.id] }}</span>
         </button>
       </li>
     </ul>
 
     <WeatherWidget class="w-full max-w-xs" />
 
-    <section data-testid="venue-list" class="w-full max-w-xl text-left">
+    <section data-testid="venue-list" class="w-full text-left">
+      <div
+        v-if="!isLoading && !hasError && filteredVenues.length > 0"
+        class="mb-4 flex items-baseline justify-between"
+      >
+        <h2 class="font-serif text-2xl italic text-text">
+          {{ activeMood ? moodLabelFor(activeMood) : 'Tous les spots' }}
+        </h2>
+        <span class="font-mono text-[10px] uppercase tracking-[0.18em] text-text-3">
+          {{ filteredVenues.length }} {{ filteredVenues.length > 1 ? 'lieux' : 'lieu' }}
+        </span>
+      </div>
+
       <p
         v-if="isLoading"
         data-testid="venue-loading"
@@ -143,7 +176,15 @@ onMounted(() => {
       >
         Aucun lieu pour cette ambiance.
       </p>
-      <VenueList v-else :venues="filteredVenues" />
+      <template v-else>
+        <VenueList :venues="displayedVenues" />
+        <p
+          v-if="hiddenCount > 0"
+          class="mt-6 text-center font-mono text-[10px] uppercase tracking-[0.18em] text-text-3"
+        >
+          + {{ hiddenCount }} autres lieux · affine avec la recherche ou l'ambiance
+        </p>
+      </template>
     </section>
   </main>
 </template>
