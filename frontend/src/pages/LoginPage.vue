@@ -59,75 +59,78 @@ async function onSubmit(): Promise<void> {
     isSubmitting.value = false
   }
 }
+
+const INPUT_CLASS =
+  'rounded-xl border border-hairline bg-ink-2/60 px-3 py-2.5 text-text outline-none transition placeholder:text-text-3 focus:border-pink/50'
 </script>
 
 <template>
-  <main class="flex min-h-[80vh] items-center justify-center px-6">
+  <main class="flex min-h-[80vh] items-center justify-center px-6 py-12">
     <section
-      class="w-full max-w-sm rounded-2xl border border-white/10 bg-white/5 p-8"
+      class="glass-strong relative w-full max-w-sm overflow-hidden rounded-3xl border border-hairline bg-glass-strong p-8"
       aria-label="Authentification"
     >
-      <h1 class="font-serif text-3xl italic text-ink-primary">
+      <div
+        aria-hidden="true"
+        class="pointer-events-none absolute -right-16 -top-20 h-48 w-48 rounded-full bg-pink opacity-25 blur-3xl"
+      />
+
+      <p class="relative font-mono text-[10px] uppercase tracking-[0.3em] text-text-3">
+        Nantes · Nightlife
+      </p>
+      <h1 class="relative mt-2 font-serif text-3xl italic text-text">
         {{ isRegister ? 'Rejoindre la nuit' : 'Bon retour' }}
       </h1>
-      <p class="mt-1 text-sm text-ink-muted">
+      <p class="relative mt-1 text-sm text-text-2">
         {{ isRegister ? 'Crée ton compte NOCTAMBULE.' : 'Connecte-toi pour continuer.' }}
       </p>
 
-      <div class="mt-6 flex gap-2 font-mono text-[10px] uppercase tracking-widest">
+      <div class="relative mt-6 flex gap-2 font-mono text-[10px] uppercase tracking-[0.16em]">
         <button
           type="button"
-          class="rounded-full px-3 py-1 transition"
-          :class="
-            !isRegister ? 'bg-white/10 text-ink-primary' : 'text-ink-muted hover:text-ink-primary'
-          "
+          class="rounded-full px-3 py-1.5 transition"
+          :class="!isRegister ? 'bg-pink/15 text-pink' : 'text-text-3 hover:text-text'"
           @click="switchMode('login')"
         >
           Connexion
         </button>
         <button
           type="button"
-          class="rounded-full px-3 py-1 transition"
-          :class="
-            isRegister ? 'bg-white/10 text-ink-primary' : 'text-ink-muted hover:text-ink-primary'
-          "
+          class="rounded-full px-3 py-1.5 transition"
+          :class="isRegister ? 'bg-pink/15 text-pink' : 'text-text-3 hover:text-text'"
           @click="switchMode('register')"
         >
           Inscription
         </button>
       </div>
 
-      <form class="mt-6 flex flex-col gap-4" @submit.prevent="onSubmit">
-        <label v-if="isRegister" class="flex flex-col gap-1">
-          <span class="font-mono text-[10px] uppercase tracking-widest text-ink-muted">
-            Pseudo
-          </span>
+      <form class="relative mt-6 flex flex-col gap-4" @submit.prevent="onSubmit">
+        <label v-if="isRegister" class="flex flex-col gap-1.5">
+          <span class="font-mono text-[10px] uppercase tracking-[0.16em] text-text-3">Pseudo</span>
           <input
             v-model="form.username"
             type="text"
             name="username"
             autocomplete="username"
             required
-            class="rounded-lg border border-white/10 bg-surface-night/40 px-3 py-2 text-ink-primary outline-none transition focus:border-white/30"
+            :class="INPUT_CLASS"
           />
         </label>
 
-        <label class="flex flex-col gap-1">
-          <span class="font-mono text-[10px] uppercase tracking-widest text-ink-muted">
-            Email
-          </span>
+        <label class="flex flex-col gap-1.5">
+          <span class="font-mono text-[10px] uppercase tracking-[0.16em] text-text-3">Email</span>
           <input
             v-model="form.email"
             type="email"
             name="email"
             autocomplete="email"
             required
-            class="rounded-lg border border-white/10 bg-surface-night/40 px-3 py-2 text-ink-primary outline-none transition focus:border-white/30"
+            :class="INPUT_CLASS"
           />
         </label>
 
-        <label class="flex flex-col gap-1">
-          <span class="font-mono text-[10px] uppercase tracking-widest text-ink-muted">
+        <label class="flex flex-col gap-1.5">
+          <span class="font-mono text-[10px] uppercase tracking-[0.16em] text-text-3">
             Mot de passe
           </span>
           <input
@@ -136,12 +139,12 @@ async function onSubmit(): Promise<void> {
             name="password"
             :autocomplete="isRegister ? 'new-password' : 'current-password'"
             required
-            class="rounded-lg border border-white/10 bg-surface-night/40 px-3 py-2 text-ink-primary outline-none transition focus:border-white/30"
+            :class="INPUT_CLASS"
           />
         </label>
 
-        <label v-if="isRegister" class="flex flex-col gap-1">
-          <span class="font-mono text-[10px] uppercase tracking-widest text-ink-muted">
+        <label v-if="isRegister" class="flex flex-col gap-1.5">
+          <span class="font-mono text-[10px] uppercase tracking-[0.16em] text-text-3">
             Confirme le mot de passe
           </span>
           <input
@@ -150,18 +153,18 @@ async function onSubmit(): Promise<void> {
             name="password_confirmation"
             autocomplete="new-password"
             required
-            class="rounded-lg border border-white/10 bg-surface-night/40 px-3 py-2 text-ink-primary outline-none transition focus:border-white/30"
+            :class="INPUT_CLASS"
           />
         </label>
 
-        <p v-if="errorMessage" data-testid="auth-error" class="text-sm text-mood-festif">
+        <p v-if="errorMessage" data-testid="auth-error" class="text-sm text-pink">
           {{ errorMessage }}
         </p>
 
         <button
           type="submit"
           :disabled="isSubmitting"
-          class="mt-2 rounded-full bg-ink-primary px-4 py-2 font-mono text-xs uppercase tracking-widest text-surface-night transition hover:opacity-90 disabled:opacity-50"
+          class="glow-pink mt-2 rounded-full bg-pink px-4 py-3 font-mono text-[11px] uppercase tracking-[0.18em] text-white transition hover:bg-pink-bright disabled:opacity-50"
         >
           {{ isSubmitting ? 'Patiente…' : isRegister ? 'Créer mon compte' : 'Se connecter' }}
         </button>

@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
 const router = useRouter()
+
+const initial = computed(() => auth.user?.username?.charAt(0).toUpperCase() ?? '?')
 
 onMounted(async () => {
   if (auth.user === null) {
@@ -23,32 +25,45 @@ async function onLogout(): Promise<void> {
 </script>
 
 <template>
-  <main class="flex min-h-[80vh] items-center justify-center px-6">
+  <main class="flex min-h-[80vh] items-center justify-center px-6 py-12">
     <section
-      class="w-full max-w-sm rounded-2xl border border-white/10 bg-white/5 p-8"
+      class="glass-strong relative w-full max-w-sm overflow-hidden rounded-3xl border border-hairline bg-glass-strong p-8"
       aria-label="Profil"
     >
-      <h1 class="font-serif text-3xl italic text-ink-primary">Mon profil</h1>
-      <p class="mt-1 text-sm text-ink-muted">Tes informations NOCTAMBULE.</p>
+      <div
+        aria-hidden="true"
+        class="pointer-events-none absolute -left-16 -top-20 h-48 w-48 rounded-full bg-violet opacity-25 blur-3xl"
+      />
 
-      <dl class="mt-6 flex flex-col gap-4">
-        <div class="flex flex-col gap-1">
-          <dt class="font-mono text-[10px] uppercase tracking-widest text-ink-muted">Pseudo</dt>
-          <dd data-testid="profile-username" class="text-ink-primary">
-            {{ auth.user?.username }}
-          </dd>
+      <div class="relative flex items-center gap-4">
+        <span
+          class="glow-violet flex h-14 w-14 items-center justify-center rounded-full bg-violet-bright font-serif text-2xl italic text-white"
+          aria-hidden="true"
+        >
+          {{ initial }}
+        </span>
+        <div class="flex flex-col">
+          <p class="font-mono text-[10px] uppercase tracking-[0.3em] text-text-3">Mon profil</p>
+          <h1 class="font-serif text-3xl italic text-text">
+            {{ auth.user?.username ?? 'Noctambule' }}
+          </h1>
         </div>
-        <div class="flex flex-col gap-1">
-          <dt class="font-mono text-[10px] uppercase tracking-widest text-ink-muted">Email</dt>
-          <dd data-testid="profile-email" class="text-ink-primary">
-            {{ auth.user?.email }}
-          </dd>
+      </div>
+
+      <dl class="relative mt-8 flex flex-col gap-4">
+        <div class="flex flex-col gap-1 rounded-2xl border border-hairline bg-glass px-4 py-3">
+          <dt class="font-mono text-[10px] uppercase tracking-[0.16em] text-text-3">Pseudo</dt>
+          <dd data-testid="profile-username" class="text-text">{{ auth.user?.username }}</dd>
+        </div>
+        <div class="flex flex-col gap-1 rounded-2xl border border-hairline bg-glass px-4 py-3">
+          <dt class="font-mono text-[10px] uppercase tracking-[0.16em] text-text-3">Email</dt>
+          <dd data-testid="profile-email" class="text-text">{{ auth.user?.email }}</dd>
         </div>
       </dl>
 
       <button
         type="button"
-        class="mt-8 rounded-full bg-ink-primary px-4 py-2 font-mono text-xs uppercase tracking-widest text-surface-night transition hover:opacity-90"
+        class="relative mt-8 w-full rounded-full border border-hairline px-4 py-3 font-mono text-[11px] uppercase tracking-[0.18em] text-text-2 transition hover:border-pink/50 hover:text-pink"
         @click="onLogout"
       >
         Déconnexion
