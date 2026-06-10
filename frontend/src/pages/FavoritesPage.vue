@@ -21,7 +21,9 @@ onMounted(async () => {
 <template>
   <main class="mx-auto flex min-h-[80vh] w-full max-w-xl flex-col gap-6 px-6 pb-24 pt-12">
     <header class="flex flex-col gap-1">
-      <p class="font-mono text-[11px] uppercase tracking-[0.3em] text-text-3">Tes lieux</p>
+      <p class="font-mono text-[11px] uppercase tracking-[0.3em] text-text-3">
+        Tes lieux
+      </p>
       <h1 class="font-serif text-4xl italic text-text">
         Favoris<span class="text-pink">.</span>
       </h1>

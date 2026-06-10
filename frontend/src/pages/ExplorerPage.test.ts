@@ -13,7 +13,10 @@ vi.mock('leaflet', () => {
     getLatLng: vi.fn(() => ({ lat: 0, lng: 0 })),
     openTooltip: vi.fn().mockReturnThis(),
   }
-  const layerGroup = { addTo: vi.fn().mockReturnThis(), clearLayers: vi.fn().mockReturnThis() }
+  const layerGroup = {
+    addTo: vi.fn().mockReturnThis(),
+    clearLayers: vi.fn().mockReturnThis(),
+  }
   const map = {
     setView: vi.fn().mockReturnThis(),
     fitBounds: vi.fn().mockReturnThis(),
@@ -86,7 +89,9 @@ describe('ExplorerPage', () => {
     const wrapper = mountExplorer()
     await flushPromises()
 
-    await wrapper.find('[data-testid="explorer-mood-filter"][data-mood="festif"]').trigger('click')
+    await wrapper
+      .find('[data-testid="explorer-mood-filter"][data-mood="festif"]')
+      .trigger('click')
 
     const items = wrapper.findAll('[data-testid="explorer-venue"]')
     expect(items).toHaveLength(2)

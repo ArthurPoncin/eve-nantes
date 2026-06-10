@@ -25,9 +25,7 @@ const sampleVenue = {
 describe('api-client.fetchVenues', () => {
   it('GETs /api/v1/venues and returns the unwrapped data array', async () => {
     server.use(
-      http.get('*/api/v1/venues', () =>
-        HttpResponse.json({ data: [sampleVenue] }),
-      ),
+      http.get('*/api/v1/venues', () => HttpResponse.json({ data: [sampleVenue] })),
     )
 
     const venues = await fetchVenues()

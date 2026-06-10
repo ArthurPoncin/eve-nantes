@@ -91,7 +91,9 @@ function formatEventDate(iso: string): string {
           >
             {{ formatEventDate(venue.next_event.starts_at) }}
           </span>
-          <span class="line-clamp-1 text-[11px] text-text-2">{{ venue.next_event.title }}</span>
+          <span class="line-clamp-1 text-[11px] text-text-2">{{
+            venue.next_event.title
+          }}</span>
         </div>
       </RouterLink>
 

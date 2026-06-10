@@ -102,7 +102,12 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="mapEl" data-testid="venues-map" aria-label="Carte des lieux" class="h-full w-full bg-ink" />
+  <div
+    ref="mapEl"
+    data-testid="venues-map"
+    aria-label="Carte des lieux"
+    class="h-full w-full bg-ink"
+  />
 </template>
 
 <style>

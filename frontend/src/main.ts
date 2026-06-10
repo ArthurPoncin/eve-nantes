@@ -14,7 +14,9 @@ app.use(router)
 const auth = useAuthStore()
 if (auth.isAuthenticated) {
   auth.loadMe().catch(() => auth.logout())
-  useFavoritesStore().load().catch(() => {})
+  useFavoritesStore()
+    .load()
+    .catch(() => {})
 }
 
 app.mount('#app')

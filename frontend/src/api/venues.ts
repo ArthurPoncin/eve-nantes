@@ -9,8 +9,6 @@ export async function fetchVenues(mood?: string): Promise<Venue[]> {
 }
 
 export async function fetchVenue(slug: string): Promise<VenueDetail> {
-  const response = await apiClient.get<{ data: VenueDetail }>(
-    `/api/v1/venues/${slug}`,
-  )
+  const response = await apiClient.get<{ data: VenueDetail }>(`/api/v1/venues/${slug}`)
   return response.data.data
 }

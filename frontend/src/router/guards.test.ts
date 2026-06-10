@@ -3,7 +3,10 @@ import { createPinia, setActivePinia } from 'pinia'
 import type { RouteLocationNormalized } from 'vue-router'
 import { requireAuth } from './guards'
 
-function fakeRoute(meta: RouteLocationNormalized['meta'], fullPath = '/'): RouteLocationNormalized {
+function fakeRoute(
+  meta: RouteLocationNormalized['meta'],
+  fullPath = '/',
+): RouteLocationNormalized {
   return { meta, fullPath } as RouteLocationNormalized
 }
 

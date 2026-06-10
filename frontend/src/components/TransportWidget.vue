@@ -96,7 +96,9 @@ onMounted(async () => {
         >
           {{ departure.line }}
         </span>
-        <span class="flex-1 truncate text-sm text-text-2">→ {{ departure.terminus }}</span>
+        <span class="flex-1 truncate text-sm text-text-2"
+          >→ {{ departure.terminus }}</span
+        >
         <span class="flex shrink-0 items-center gap-1.5 font-mono text-xs text-text">
           <span
             v-if="departure.realtime"

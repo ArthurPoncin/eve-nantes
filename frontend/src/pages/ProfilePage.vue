@@ -43,7 +43,9 @@ async function onLogout(): Promise<void> {
           {{ initial }}
         </span>
         <div class="flex flex-col">
-          <p class="font-mono text-[10px] uppercase tracking-[0.3em] text-text-3">Mon profil</p>
+          <p class="font-mono text-[10px] uppercase tracking-[0.3em] text-text-3">
+            Mon profil
+          </p>
           <h1 class="font-serif text-3xl italic text-text">
             {{ auth.user?.username ?? 'Noctambule' }}
           </h1>
@@ -51,12 +53,22 @@ async function onLogout(): Promise<void> {
       </div>
 
       <dl class="relative mt-8 flex flex-col gap-4">
-        <div class="flex flex-col gap-1 rounded-2xl border border-hairline bg-glass px-4 py-3">
-          <dt class="font-mono text-[10px] uppercase tracking-[0.16em] text-text-3">Pseudo</dt>
-          <dd data-testid="profile-username" class="text-text">{{ auth.user?.username }}</dd>
+        <div
+          class="flex flex-col gap-1 rounded-2xl border border-hairline bg-glass px-4 py-3"
+        >
+          <dt class="font-mono text-[10px] uppercase tracking-[0.16em] text-text-3">
+            Pseudo
+          </dt>
+          <dd data-testid="profile-username" class="text-text">
+            {{ auth.user?.username }}
+          </dd>
         </div>
-        <div class="flex flex-col gap-1 rounded-2xl border border-hairline bg-glass px-4 py-3">
-          <dt class="font-mono text-[10px] uppercase tracking-[0.16em] text-text-3">Email</dt>
+        <div
+          class="flex flex-col gap-1 rounded-2xl border border-hairline bg-glass px-4 py-3"
+        >
+          <dt class="font-mono text-[10px] uppercase tracking-[0.16em] text-text-3">
+            Email
+          </dt>
           <dd data-testid="profile-email" class="text-text">{{ auth.user?.email }}</dd>
         </div>
       </dl>

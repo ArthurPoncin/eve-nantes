@@ -13,8 +13,20 @@ function makeTransport(overrides: Partial<VenueTransport> = {}): VenueTransport 
   return {
     stop: { code: 'CDCI', name: 'Chantiers Navals', distance: '143 m' },
     departures: [
-      { line: '1', type: 'tram', terminus: 'François Mitterrand', wait: '4mn', realtime: true },
-      { line: 'C5', type: 'bus', terminus: 'Quai des Antilles', wait: '12mn', realtime: false },
+      {
+        line: '1',
+        type: 'tram',
+        terminus: 'François Mitterrand',
+        wait: '4mn',
+        realtime: true,
+      },
+      {
+        line: 'C5',
+        type: 'bus',
+        terminus: 'Quai des Antilles',
+        wait: '12mn',
+        realtime: false,
+      },
     ],
     ...overrides,
   }

@@ -29,7 +29,11 @@ function iconUrl(icon: string): string {
     class="glass flex items-center gap-4 rounded-2xl border border-hairline bg-glass px-5 py-4"
   >
     <template v-if="isLoading">
-      <div data-testid="weather-skeleton" class="flex w-full items-center gap-4" aria-hidden="true">
+      <div
+        data-testid="weather-skeleton"
+        class="flex w-full items-center gap-4"
+        aria-hidden="true"
+      >
         <div class="h-12 w-12 animate-pulse rounded-full bg-white/10" />
         <div class="flex flex-1 flex-col gap-2">
           <div class="h-4 w-20 animate-pulse rounded bg-white/10" />

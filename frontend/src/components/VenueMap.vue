@@ -13,9 +13,7 @@ const props = defineProps<{
 const mapEl = ref<HTMLElement | null>(null)
 let map: L.Map | null = null
 
-const hasCoords = computed(
-  () => props.latitude !== null && props.longitude !== null,
-)
+const hasCoords = computed(() => props.latitude !== null && props.longitude !== null)
 
 // Lien d'itinéraire OpenStreetMap (sans clé d'API) vers la destination.
 const directionsUrl = computed(() => {

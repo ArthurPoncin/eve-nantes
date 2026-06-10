@@ -35,7 +35,14 @@ const sampleSoiree: Soiree = {
     ends_at: '2026-06-15T02:00:00.000Z',
     price_cents: 1200,
   },
-  weather: { temp: 18.4, feels_like: 17, condition: 'Couvert', icon: '04n', wind: 8, humidity: 70 },
+  weather: {
+    temp: 18.4,
+    feels_like: 17,
+    condition: 'Couvert',
+    icon: '04n',
+    wind: 8,
+    humidity: 70,
+  },
   narrative: 'Ce soir au Macadam, la techno vibre sous un ciel couvert.',
 }
 
@@ -63,7 +70,9 @@ describe('SoireePage', () => {
     expect(generateSoireeMock).toHaveBeenCalledWith('festif')
     const result = wrapper.find('[data-testid="soiree-result"]')
     expect(result.exists()).toBe(true)
-    expect(wrapper.find('[data-testid="soiree-narrative"]').text()).toContain('la techno vibre')
+    expect(wrapper.find('[data-testid="soiree-narrative"]').text()).toContain(
+      'la techno vibre',
+    )
     expect(result.text()).toContain('Le Macadam')
     expect(result.text()).toContain('Nuit Techno')
   })
@@ -96,7 +105,9 @@ describe('SoireePage', () => {
     generateSoireeMock.mockRejectedValue(new Error('network'))
     const wrapper = mountPage()
 
-    await wrapper.find('[data-testid="soiree-mood"][data-mood="afterwork"]').trigger('click')
+    await wrapper
+      .find('[data-testid="soiree-mood"][data-mood="afterwork"]')
+      .trigger('click')
     await flushPromises()
 
     expect(wrapper.find('[data-testid="soiree-error"]').exists()).toBe(true)
@@ -110,7 +121,9 @@ describe('SoireePage', () => {
     await flushPromises()
 
     await wrapper.find('[data-testid="soiree-share-toggle"]').trigger('click')
-    await wrapper.find('[data-testid="soiree-share-form"] input').setValue('ami@example.com')
+    await wrapper
+      .find('[data-testid="soiree-share-form"] input')
+      .setValue('ami@example.com')
     await wrapper.find('[data-testid="soiree-share-form"]').trigger('submit')
     await flushPromises()
 

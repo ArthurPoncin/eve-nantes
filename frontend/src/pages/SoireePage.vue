@@ -4,10 +4,34 @@ import { generateSoiree, shareSoiree } from '@/api/soiree'
 import type { Soiree } from '@/types/soiree'
 
 const moods = [
-  { id: 'festif', label: 'Festif', desc: 'Clubs, DJ, dancefloor', active: 'border-pink text-pink glow-pink', dot: 'bg-mood-festif' },
-  { id: 'chill', label: 'Chill', desc: 'Bars cosy, douceur', active: 'border-cyan text-cyan glow-cyan', dot: 'bg-mood-chill' },
-  { id: 'decouverte', label: 'Découverte', desc: 'Scènes, curiosités', active: 'border-violet-bright text-violet-bright glow-violet', dot: 'bg-mood-decouverte' },
-  { id: 'afterwork', label: 'Afterwork', desc: 'Apéro, before', active: 'border-gold text-gold glow-gold', dot: 'bg-mood-afterwork' },
+  {
+    id: 'festif',
+    label: 'Festif',
+    desc: 'Clubs, DJ, dancefloor',
+    active: 'border-pink text-pink glow-pink',
+    dot: 'bg-mood-festif',
+  },
+  {
+    id: 'chill',
+    label: 'Chill',
+    desc: 'Bars cosy, douceur',
+    active: 'border-cyan text-cyan glow-cyan',
+    dot: 'bg-mood-chill',
+  },
+  {
+    id: 'decouverte',
+    label: 'Découverte',
+    desc: 'Scènes, curiosités',
+    active: 'border-violet-bright text-violet-bright glow-violet',
+    dot: 'bg-mood-decouverte',
+  },
+  {
+    id: 'afterwork',
+    label: 'Afterwork',
+    desc: 'Apéro, before',
+    active: 'border-gold text-gold glow-gold',
+    dot: 'bg-mood-afterwork',
+  },
 ] as const
 
 const MOOD_LABEL: Record<string, string> = {
@@ -90,7 +114,11 @@ function moodDot(mood: string | null): string {
 }
 function formatEvent(iso: string): string {
   const d = new Date(iso)
-  const date = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
+  const date = d.toLocaleDateString('fr-FR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  })
   const time = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
   return `${date} · ${time}`
 }
@@ -100,15 +128,19 @@ function weatherIcon(icon: string): string {
 </script>
 
 <template>
-  <main class="mx-auto flex w-full max-w-2xl flex-col items-center gap-8 px-6 pb-24 pt-16 text-center">
+  <main
+    class="mx-auto flex w-full max-w-2xl flex-col items-center gap-8 px-6 pb-24 pt-16 text-center"
+  >
     <div class="flex flex-col items-center gap-3">
-      <p class="font-mono text-[11px] uppercase tracking-[0.3em] text-text-3">Nantes · ce soir</p>
+      <p class="font-mono text-[11px] uppercase tracking-[0.3em] text-text-3">
+        Nantes · ce soir
+      </p>
       <h1 class="font-serif text-4xl italic leading-tight text-text md:text-5xl">
         Compose <span class="text-pink">ta soirée</span>
       </h1>
       <p class="max-w-md text-base text-text-2">
-        Choisis ton humeur, on s'occupe du reste — un lieu, un événement, la météo et une suggestion
-        rien que pour toi.
+        Choisis ton humeur, on s'occupe du reste — un lieu, un événement, la météo et une
+        suggestion rien que pour toi.
       </p>
     </div>
 
@@ -123,7 +155,9 @@ function weatherIcon(icon: string): string {
           :class="{ [mood.active]: selectedMood === mood.id }"
           @click="compose(mood.id)"
         >
-          <span class="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.16em] text-text">
+          <span
+            class="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.16em] text-text"
+          >
             <span class="h-2 w-2 rounded-full" :class="mood.dot" />
             {{ mood.label }}
           </span>
@@ -194,7 +228,9 @@ function weatherIcon(icon: string): string {
       <div class="mt-6 flex flex-col gap-4 border-t border-hairline pt-5">
         <div class="flex items-start justify-between gap-3">
           <div class="flex min-w-0 flex-col">
-            <span class="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-text-3">
+            <span
+              class="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-text-3"
+            >
               <span class="h-1.5 w-1.5 rounded-full" :class="moodDot(soiree.mood)" />
               Le spot
             </span>
@@ -207,14 +243,26 @@ function weatherIcon(icon: string): string {
             </RouterLink>
             <span class="text-sm text-text-3">{{ soiree.venue.address_line }}</span>
           </div>
-          <div class="flex shrink-0 items-center gap-1.5 rounded-full border border-hairline px-3 py-1.5">
-            <img :src="weatherIcon(soiree.weather.icon)" :alt="soiree.weather.condition" class="h-6 w-6" width="24" height="24" />
-            <span class="font-serif text-lg italic text-text">{{ Math.round(soiree.weather.temp) }}°</span>
+          <div
+            class="flex shrink-0 items-center gap-1.5 rounded-full border border-hairline px-3 py-1.5"
+          >
+            <img
+              :src="weatherIcon(soiree.weather.icon)"
+              :alt="soiree.weather.condition"
+              class="h-6 w-6"
+              width="24"
+              height="24"
+            />
+            <span class="font-serif text-lg italic text-text"
+              >{{ Math.round(soiree.weather.temp) }}°</span
+            >
           </div>
         </div>
 
         <div v-if="soiree.event" class="rounded-2xl border border-pink/30 bg-pink/5 p-4">
-          <span class="font-mono text-[10px] uppercase tracking-[0.16em] text-pink-bright">
+          <span
+            class="font-mono text-[10px] uppercase tracking-[0.16em] text-pink-bright"
+          >
             ✦ L'événement
           </span>
           <p class="mt-1 font-serif text-lg italic text-text">{{ soiree.event.title }}</p>

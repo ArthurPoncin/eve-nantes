@@ -81,7 +81,9 @@ describe('auth store', () => {
 
   it('stores the session after a successful registration', async () => {
     server.use(
-      http.post('*/api/v1/auth/register', () => HttpResponse.json(session, { status: 201 })),
+      http.post('*/api/v1/auth/register', () =>
+        HttpResponse.json(session, { status: 201 }),
+      ),
     )
 
     const auth = useAuthStore()

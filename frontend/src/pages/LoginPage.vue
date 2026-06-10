@@ -85,7 +85,9 @@ const INPUT_CLASS =
         {{ isRegister ? 'Crée ton compte NOCTAMBULE.' : 'Connecte-toi pour continuer.' }}
       </p>
 
-      <div class="relative mt-6 flex gap-2 font-mono text-[10px] uppercase tracking-[0.16em]">
+      <div
+        class="relative mt-6 flex gap-2 font-mono text-[10px] uppercase tracking-[0.16em]"
+      >
         <button
           type="button"
           class="rounded-full px-3 py-1.5 transition"
@@ -106,7 +108,9 @@ const INPUT_CLASS =
 
       <form class="relative mt-6 flex flex-col gap-4" @submit.prevent="onSubmit">
         <label v-if="isRegister" class="flex flex-col gap-1.5">
-          <span class="font-mono text-[10px] uppercase tracking-[0.16em] text-text-3">Pseudo</span>
+          <span class="font-mono text-[10px] uppercase tracking-[0.16em] text-text-3"
+            >Pseudo</span
+          >
           <input
             v-model="form.username"
             type="text"
@@ -118,7 +122,9 @@ const INPUT_CLASS =
         </label>
 
         <label class="flex flex-col gap-1.5">
-          <span class="font-mono text-[10px] uppercase tracking-[0.16em] text-text-3">Email</span>
+          <span class="font-mono text-[10px] uppercase tracking-[0.16em] text-text-3"
+            >Email</span
+          >
           <input
             v-model="form.email"
             type="email"
@@ -166,7 +172,9 @@ const INPUT_CLASS =
           :disabled="isSubmitting"
           class="glow-pink mt-2 rounded-full bg-pink px-4 py-3 font-mono text-[11px] uppercase tracking-[0.18em] text-white transition hover:bg-pink-bright disabled:opacity-50"
         >
-          {{ isSubmitting ? 'Patiente…' : isRegister ? 'Créer mon compte' : 'Se connecter' }}
+          {{
+            isSubmitting ? 'Patiente…' : isRegister ? 'Créer mon compte' : 'Se connecter'
+          }}
         </button>
       </form>
     </section>

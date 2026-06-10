@@ -69,17 +69,33 @@ body {
   min-height: 100vh;
   background-color: var(--color-ink);
   background-image:
-    radial-gradient(ellipse 60% 50% at 18% -5%, rgba(124, 58, 237, 0.35), transparent 70%),
-    radial-gradient(ellipse 50% 42% at 92% 10%, rgba(255, 45, 146, 0.26), transparent 70%),
+    radial-gradient(
+      ellipse 60% 50% at 18% -5%,
+      rgba(124, 58, 237, 0.35),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 50% 42% at 92% 10%,
+      rgba(255, 45, 146, 0.26),
+      transparent 70%
+    ),
     radial-gradient(ellipse 70% 50% at 50% 108%, rgba(94, 234, 212, 0.1), transparent 70%);
   background-attachment: fixed;
 }
 
 html[data-theme='sunset'] body {
   background-image:
-    radial-gradient(ellipse 60% 50% at 18% -5%, rgba(245, 197, 107, 0.22), transparent 70%),
+    radial-gradient(
+      ellipse 60% 50% at 18% -5%,
+      rgba(245, 197, 107, 0.22),
+      transparent 70%
+    ),
     radial-gradient(ellipse 55% 45% at 90% 8%, rgba(255, 45, 146, 0.32), transparent 70%),
-    radial-gradient(ellipse 70% 50% at 50% 108%, rgba(124, 58, 237, 0.18), transparent 70%);
+    radial-gradient(
+      ellipse 70% 50% at 50% 108%,
+      rgba(124, 58, 237, 0.18),
+      transparent 70%
+    );
 }
 
 #app {
@@ -99,10 +115,14 @@ html[data-theme='sunset'] body {
 
 /* Halos néon */
 .glow-pink {
-  box-shadow: 0 0 24px rgba(255, 45, 146, 0.5), 0 0 48px rgba(255, 45, 146, 0.22);
+  box-shadow:
+    0 0 24px rgba(255, 45, 146, 0.5),
+    0 0 48px rgba(255, 45, 146, 0.22);
 }
 .glow-violet {
-  box-shadow: 0 0 24px rgba(168, 85, 247, 0.45), 0 0 48px rgba(124, 58, 237, 0.22);
+  box-shadow:
+    0 0 24px rgba(168, 85, 247, 0.45),
+    0 0 48px rgba(124, 58, 237, 0.22);
 }
 .glow-gold {
   box-shadow: 0 0 24px rgba(245, 197, 107, 0.4);

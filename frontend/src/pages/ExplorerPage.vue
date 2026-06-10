@@ -5,10 +5,25 @@ import { fetchVenues } from '@/api/venues'
 import type { Venue } from '@/types/venue'
 
 const moods = [
-  { id: 'festif', label: 'Festif', dot: 'bg-mood-festif', active: 'border-pink text-pink' },
+  {
+    id: 'festif',
+    label: 'Festif',
+    dot: 'bg-mood-festif',
+    active: 'border-pink text-pink',
+  },
   { id: 'chill', label: 'Chill', dot: 'bg-mood-chill', active: 'border-cyan text-cyan' },
-  { id: 'decouverte', label: 'Découverte', dot: 'bg-mood-decouverte', active: 'border-violet-bright text-violet-bright' },
-  { id: 'afterwork', label: 'Afterwork', dot: 'bg-mood-afterwork', active: 'border-gold text-gold' },
+  {
+    id: 'decouverte',
+    label: 'Découverte',
+    dot: 'bg-mood-decouverte',
+    active: 'border-violet-bright text-violet-bright',
+  },
+  {
+    id: 'afterwork',
+    label: 'Afterwork',
+    dot: 'bg-mood-afterwork',
+    active: 'border-gold text-gold',
+  },
 ] as const
 
 // Tailwind v4 JIT ne détecte que les classes littérales.
@@ -206,7 +221,9 @@ onMounted(load)
                   <span class="mt-1 block truncate font-serif text-base italic text-text">
                     {{ venue.name }}
                   </span>
-                  <span class="block truncate text-xs text-text-3">{{ venue.address_line }}</span>
+                  <span class="block truncate text-xs text-text-3">{{
+                    venue.address_line
+                  }}</span>
                 </button>
                 <RouterLink
                   :to="`/venues/${venue.slug}`"
@@ -224,7 +241,9 @@ onMounted(load)
                 >
                   {{ formatEventDate(venue.next_event.starts_at) }}
                 </span>
-                <span class="truncate text-[11px] text-text-2">{{ venue.next_event.title }}</span>
+                <span class="truncate text-[11px] text-text-2">{{
+                  venue.next_event.title
+                }}</span>
               </p>
             </div>
           </li>

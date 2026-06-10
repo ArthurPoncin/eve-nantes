@@ -15,8 +15,14 @@ interface Building {
 
 // Largeurs/hauteurs fixes -> skyline irrégulière mais reproductible.
 const buildings: Building[] = (() => {
-  const widths = [70, 54, 60, 48, 64, 58, 62, 54, 70, 56, 60, 66, 52, 64, 58, 70, 54, 62, 66, 56, 60, 64, 58, 70, 80]
-  const heights = [96, 132, 70, 150, 104, 178, 92, 134, 64, 120, 190, 100, 146, 78, 128, 168, 96, 140, 72, 118, 182, 104, 150, 84, 130]
+  const widths = [
+    70, 54, 60, 48, 64, 58, 62, 54, 70, 56, 60, 66, 52, 64, 58, 70, 54, 62, 66, 56, 60,
+    64, 58, 70, 80,
+  ]
+  const heights = [
+    96, 132, 70, 150, 104, 178, 92, 134, 64, 120, 190, 100, 146, 78, 128, 168, 96, 140,
+    72, 118, 182, 104, 150, 84, 130,
+  ]
   const out: Building[] = []
   let x = 0
   for (let i = 0; i < widths.length; i++) {
@@ -79,7 +85,13 @@ const particles = [
       :key="i"
       class="noct-particle absolute rounded-full"
       :class="p.c"
-      :style="{ top: p.t, left: p.l, width: `${p.s}px`, height: `${p.s}px`, animationDelay: p.d }"
+      :style="{
+        top: p.t,
+        left: p.l,
+        width: `${p.s}px`,
+        height: `${p.s}px`,
+        animationDelay: p.d,
+      }"
     />
 
     <!-- Silhouette de la ville -->
@@ -120,7 +132,14 @@ const particles = [
 
       <!-- Lampadaire -->
       <g class="noct-lamp">
-        <rect class="noct-lamp-pole" :x="VIEW_W - 360" y="120" width="4" height="100" rx="2" />
+        <rect
+          class="noct-lamp-pole"
+          :x="VIEW_W - 360"
+          y="120"
+          width="4"
+          height="100"
+          rx="2"
+        />
         <circle class="noct-lamp-glow" :cx="VIEW_W - 358" cy="118" r="20" />
         <circle class="noct-lamp-bulb" :cx="VIEW_W - 358" cy="118" r="5" />
       </g>
@@ -131,8 +150,17 @@ const particles = [
 <style>
 /* Couleurs par thème (night = halo violet « lune » ; sunset = halo chaud « soleil »). */
 .noct-backdrop {
-  --noct-orb: radial-gradient(closest-side, rgba(168, 85, 247, 0.5), rgba(124, 58, 237, 0.16) 55%, transparent 74%);
-  --noct-orb-soft: radial-gradient(closest-side, rgba(255, 45, 146, 0.22), transparent 70%);
+  --noct-orb: radial-gradient(
+    closest-side,
+    rgba(168, 85, 247, 0.5),
+    rgba(124, 58, 237, 0.16) 55%,
+    transparent 74%
+  );
+  --noct-orb-soft: radial-gradient(
+    closest-side,
+    rgba(255, 45, 146, 0.22),
+    transparent 70%
+  );
   --noct-bld-top: #08070f;
   --noct-bld-bot: #1b1533;
   --noct-window: #f5c56b;
@@ -140,8 +168,17 @@ const particles = [
   --noct-lamp: #ffd98a;
 }
 html[data-theme='sunset'] .noct-backdrop {
-  --noct-orb: radial-gradient(closest-side, rgba(255, 178, 92, 0.72), rgba(255, 116, 64, 0.3) 48%, transparent 72%);
-  --noct-orb-soft: radial-gradient(closest-side, rgba(255, 70, 110, 0.24), transparent 70%);
+  --noct-orb: radial-gradient(
+    closest-side,
+    rgba(255, 178, 92, 0.72),
+    rgba(255, 116, 64, 0.3) 48%,
+    transparent 72%
+  );
+  --noct-orb-soft: radial-gradient(
+    closest-side,
+    rgba(255, 70, 110, 0.24),
+    transparent 70%
+  );
   --noct-bld-top: #120a12;
   --noct-bld-bot: #3a1d2a;
   --noct-window: #ffd98a;

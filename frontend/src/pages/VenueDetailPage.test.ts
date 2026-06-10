@@ -108,7 +108,9 @@ describe('VenueDetailPage', () => {
 
   it('renders one card per event', async () => {
     mockedFetchVenue.mockResolvedValue(
-      makeVenue({ events: [makeEvent({ id: 1 }), makeEvent({ id: 2, title: 'Afterwork Jazz' })] }),
+      makeVenue({
+        events: [makeEvent({ id: 1 }), makeEvent({ id: 2, title: 'Afterwork Jazz' })],
+      }),
     )
     const wrapper = await mountPage()
 

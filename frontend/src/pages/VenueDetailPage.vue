@@ -99,7 +99,10 @@ function formatDay(startsAt: string): string {
 function formatRange(event: EventSummary): string {
   const start = new Date(event.starts_at)
   const date = start.toLocaleDateString('fr-FR', { dateStyle: 'full' })
-  const startTime = start.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+  const startTime = start.toLocaleTimeString('fr-FR', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
   const endTime = new Date(event.ends_at).toLocaleTimeString('fr-FR', {
     hour: '2-digit',
     minute: '2-digit',
@@ -322,7 +325,10 @@ onMounted(() => {
               >
                 ✦ Prochainement
               </span>
-              <span v-else class="font-mono text-[10px] uppercase tracking-[0.16em] text-text-3">
+              <span
+                v-else
+                class="font-mono text-[10px] uppercase tracking-[0.16em] text-text-3"
+              >
                 {{ formatDay(event.starts_at) }}
               </span>
               <span
@@ -337,7 +343,9 @@ onMounted(() => {
             >
               {{ event.title }}
             </p>
-            <p class="mt-0.5 font-mono text-[11px] text-text-3">{{ formatRange(event) }}</p>
+            <p class="mt-0.5 font-mono text-[11px] text-text-3">
+              {{ formatRange(event) }}
+            </p>
             <p v-if="event.description" class="mt-2 line-clamp-3 text-sm text-text-2">
               {{ event.description }}
             </p>
