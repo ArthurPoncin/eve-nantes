@@ -1,15 +1,10 @@
 <script setup lang="ts">
-import { RouterLink, useRouter } from 'vue-router'
+import { RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import ModeToggle from './ModeToggle.vue'
+import UserMenu from './UserMenu.vue'
 
 const auth = useAuthStore()
-const router = useRouter()
-
-async function onLogout(): Promise<void> {
-  await auth.logout()
-  await router.push('/')
-}
 </script>
 
 <template>
@@ -33,40 +28,16 @@ async function onLogout(): Promise<void> {
         >
           Carte
         </RouterLink>
-        <template v-if="auth.isAuthenticated">
-          <span
-            class="hidden font-mono text-[11px] uppercase tracking-[0.18em] text-text-3 sm:inline"
-          >
-            {{ auth.user?.username }}
-          </span>
-          <RouterLink
-            to="/favoris"
-            class="font-mono text-[11px] uppercase tracking-[0.18em] text-text-2 transition hover:text-text"
-          >
-            Favoris
-          </RouterLink>
-          <RouterLink
-            to="/profil"
-            class="font-mono text-[11px] uppercase tracking-[0.18em] text-text-2 transition hover:text-text"
-          >
-            Profil
-          </RouterLink>
-          <button
-            type="button"
-            class="font-mono text-[11px] uppercase tracking-[0.18em] text-text-3 transition hover:text-pink-bright"
-            @click="onLogout"
-          >
-            Déconnexion
-          </button>
-        </template>
         <RouterLink
-          v-else
+          v-if="!auth.isAuthenticated"
           to="/login"
           class="glow-pink rounded-full bg-pink px-4 py-1.5 font-mono text-[11px] uppercase tracking-[0.18em] text-white transition hover:bg-pink-bright"
         >
           Connexion
         </RouterLink>
         <ModeToggle />
+        <!-- Profil, favoris et déconnexion sont regroupés dans le menu avatar. -->
+        <UserMenu v-if="auth.isAuthenticated" />
       </nav>
     </header>
     <slot />
