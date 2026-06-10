@@ -31,13 +31,10 @@ class ImportVenues extends Command
 
     public function handle(): int
     {
-        // Overpass renvoie 406 aux clients anonymes : User-Agent obligatoire.
-        $response = Http::withHeaders([
-            'User-Agent' => 'NOCTAMBULE/1.0 (+https://noctambule.zespri.duckdns.org)',
-        ])->asForm()->post(config('services.overpass.url'), ['data' => self::OVERPASS_QUERY]);
+        $response = $this->fetchFromOverpass();
 
-        if ($response->failed()) {
-            $this->error("Overpass indisponible ({$response->status()}) : import annulé.");
+        if ($response === null) {
+            $this->error('Aucune instance Overpass joignable : import annulé.');
 
             return self::FAILURE;
         }
@@ -74,6 +71,35 @@ class ImportVenues extends Command
         $this->info("{$created} lieux importés depuis OpenStreetMap.");
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Interroge les instances Overpass dans l'ordre (OVERPASS_URL accepte une
+     * liste séparée par des virgules) et s'arrête à la première qui répond :
+     * l'instance principale rate-limite agressivement certaines IPs.
+     */
+    private function fetchFromOverpass(): ?\Illuminate\Http\Client\Response
+    {
+        $endpoints = array_filter(array_map('trim', explode(',', (string) config('services.overpass.url'))));
+
+        foreach ($endpoints as $endpoint) {
+            try {
+                // Overpass renvoie 406 aux clients anonymes : User-Agent obligatoire.
+                $response = Http::withHeaders([
+                    'User-Agent' => 'NOCTAMBULE/1.0 (+https://noctambule.zespri.duckdns.org)',
+                ])->timeout(40)->asForm()->post($endpoint, ['data' => self::OVERPASS_QUERY]);
+
+                if ($response->successful()) {
+                    return $response;
+                }
+
+                $this->warn("Overpass {$endpoint} -> {$response->status()}, instance suivante…");
+            } catch (\Illuminate\Http\Client\ConnectionException) {
+                $this->warn("Overpass {$endpoint} injoignable, instance suivante…");
+            }
+        }
+
+        return null;
     }
 
     /**

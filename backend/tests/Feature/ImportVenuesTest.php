@@ -149,9 +149,24 @@ class ImportVenuesTest extends TestCase
             && str_contains($request->header('User-Agent')[0], 'NOCTAMBULE'));
     }
 
-    public function test_it_fails_gracefully_when_overpass_is_down(): void
+    public function test_it_falls_back_to_the_mirror_when_the_primary_rate_limits(): void
     {
-        Http::fake(['overpass-api.de/*' => Http::response(null, 504)]);
+        Http::fake([
+            'overpass-api.de/*' => Http::response(null, 429),
+            'overpass.kumi.systems/*' => $this->fakeOverpass()['overpass-api.de/*'],
+        ]);
+
+        $this->artisan('venues:import')->assertExitCode(0);
+
+        $this->assertSame(4, Venue::count());
+    }
+
+    public function test_it_fails_gracefully_when_all_instances_are_down(): void
+    {
+        Http::fake([
+            'overpass-api.de/*' => Http::response(null, 504),
+            'overpass.kumi.systems/*' => Http::response(null, 429),
+        ]);
 
         $this->artisan('venues:import')->assertExitCode(1);
 

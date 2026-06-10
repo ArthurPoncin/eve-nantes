@@ -28,9 +28,11 @@ return [
         'events_url' => env('NANTES_EVENTS_URL', 'https://data.nantesmetropole.fr/api/explore/v2.1/catalog/datasets/244400404_agenda-evenements-nantes-metropole_v2/records'),
     ],
 
-    // Import des bars/pubs/boîtes nantais depuis OpenStreetMap (gratuit, sans clé).
+    // Import des bars/pubs/boîtes nantais depuis OpenStreetMap (gratuit, sans
+    // clé). Liste d'instances séparées par des virgules, essayées dans l'ordre
+    // — l'instance principale rate-limite agressivement certaines IPs.
     'overpass' => [
-        'url' => env('OVERPASS_URL', 'https://overpass-api.de/api/interpreter'),
+        'url' => env('OVERPASS_URL', 'https://overpass-api.de/api/interpreter,https://overpass.kumi.systems/api/interpreter'),
     ],
 
     // Narration IA via Mistral (provider par défaut du plan, modèle free tier).
