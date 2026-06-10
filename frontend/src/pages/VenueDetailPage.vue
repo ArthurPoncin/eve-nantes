@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useFavoritesStore } from '@/stores/favorites'
 import CheckinButton from '@/components/CheckinButton.vue'
 import FavoriteButton from '@/components/FavoriteButton.vue'
+import PilierCard from '@/components/PilierCard.vue'
 import ReviewsSection from '@/components/ReviewsSection.vue'
 import TransportWidget from '@/components/TransportWidget.vue'
 import WeatherWidget from '@/components/WeatherWidget.vue'
@@ -380,6 +381,9 @@ onMounted(() => {
           </div>
         </div>
       </section>
+
+      <!-- Le « Pilier de bar » : top check-iner des 90 derniers jours -->
+      <PilierCard :slug="venue.slug" />
 
       <!-- Avis de la communauté (note moyenne + commentaires) -->
       <ReviewsSection :slug="venue.slug" />

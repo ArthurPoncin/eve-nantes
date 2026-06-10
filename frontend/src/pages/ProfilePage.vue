@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import BadgeGrid from '@/components/BadgeGrid.vue'
+import ChallengeList from '@/components/ChallengeList.vue'
 import { fetchVirees } from '@/api/virees'
 import { useAuthStore } from '@/stores/auth'
 import type { Viree } from '@/types/viree'
@@ -106,6 +107,11 @@ async function onLogout(): Promise<void> {
         <BadgeGrid />
       </div>
 
+      <!-- Défis du mois, avec leur progression -->
+      <div class="relative mt-8">
+        <ChallengeList />
+      </div>
+
       <!-- Historique des virées bouclées (façon activités Strava) -->
       <section v-if="vireesLoaded" class="relative mt-8 flex flex-col gap-2">
         <h2 class="font-mono text-[10px] uppercase tracking-[0.3em] text-text-3">
@@ -132,9 +138,17 @@ async function onLogout(): Promise<void> {
         </RouterLink>
       </section>
 
+      <RouterLink
+        to="/profil/stats"
+        data-testid="profile-wrapped-link"
+        class="glow-violet relative mt-8 block w-full rounded-full bg-violet-bright px-4 py-3 text-center font-mono text-[11px] uppercase tracking-[0.18em] text-white transition hover:opacity-90"
+      >
+        ✨ Mon Wrapped nocturne →
+      </RouterLink>
+
       <button
         type="button"
-        class="relative mt-8 w-full rounded-full border border-hairline px-4 py-3 font-mono text-[11px] uppercase tracking-[0.18em] text-text-2 transition hover:border-pink/50 hover:text-pink"
+        class="relative mt-4 w-full rounded-full border border-hairline px-4 py-3 font-mono text-[11px] uppercase tracking-[0.18em] text-text-2 transition hover:border-pink/50 hover:text-pink"
         @click="onLogout"
       >
         Déconnexion
