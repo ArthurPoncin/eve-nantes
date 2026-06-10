@@ -75,4 +75,23 @@ class User extends Authenticatable
         return $this->belongsToMany(Challenge::class, 'user_challenges')
             ->withPivot('progress', 'completed_at');
     }
+
+    /** Les noctambules que je suis. */
+    public function following(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'follows', 'follower_id', 'followee_id')
+            ->withTimestamps();
+    }
+
+    /** Les noctambules qui me suivent. */
+    public function followers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'follows', 'followee_id', 'follower_id')
+            ->withTimestamps();
+    }
+
+    public function isFollowing(User $user): bool
+    {
+        return $this->following()->whereKey($user->id)->exists();
+    }
 }

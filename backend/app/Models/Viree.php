@@ -54,4 +54,36 @@ class Viree extends Model
     {
         return $query->whereNull('ended_at');
     }
+
+    /**
+     * Une virée privée n'est visible que de son auteur et de ses abonnés ;
+     * une virée publique (défaut) est visible de tous.
+     */
+    public function isVisibleTo(?User $viewer): bool
+    {
+        if ($this->is_public) {
+            return true;
+        }
+        if ($viewer === null) {
+            return false;
+        }
+
+        return $viewer->id === $this->user_id || $viewer->isFollowing($this->user);
+    }
+
+    /** Restreint la requête aux virées visibles par ce spectateur. */
+    public function scopeVisibleTo(Builder $query, ?User $viewer): Builder
+    {
+        if ($viewer === null) {
+            return $query->where('is_public', true);
+        }
+
+        $followedIds = $viewer->following()->pluck('users.id');
+
+        return $query->where(function (Builder $inner) use ($viewer, $followedIds): void {
+            $inner->where('is_public', true)
+                ->orWhere('user_id', $viewer->id)
+                ->orWhereIn('user_id', $followedIds);
+        });
+    }
 }

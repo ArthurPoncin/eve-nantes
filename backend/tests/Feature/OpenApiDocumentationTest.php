@@ -53,6 +53,12 @@ class OpenApiDocumentationTest extends TestCase
         ['get', '/api/v1/me/stats'],
         ['get', '/api/v1/venues/{venue}/pilier'],
         ['get', '/api/v1/challenges'],
+        ['get', '/api/v1/users/search'],
+        ['get', '/api/v1/users/{user}'],
+        ['get', '/api/v1/users/{user}/followers'],
+        ['get', '/api/v1/users/{user}/following'],
+        ['post', '/api/v1/users/{user}/follow'],
+        ['delete', '/api/v1/users/{user}/follow'],
     ];
 
     public function test_la_spec_openapi_se_genere_et_documente_tous_les_endpoints(): void
@@ -91,6 +97,9 @@ class OpenApiDocumentationTest extends TestCase
             ['get', '/api/v1/virees'],
             ['get', '/api/v1/me/stats'],
             ['get', '/api/v1/challenges'],
+            ['get', '/api/v1/users/search'],
+            ['post', '/api/v1/users/{user}/follow'],
+            ['delete', '/api/v1/users/{user}/follow'],
         ] as [$method, $path]) {
             $this->assertSame(
                 [['sanctum' => []]],

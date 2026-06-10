@@ -6,11 +6,13 @@ use App\Http\Controllers\ChallengeController;
 use App\Http\Controllers\CheckinController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\FavoriteController;
+use App\Http\Controllers\FollowController;
 use App\Http\Controllers\PilierController;
 use App\Http\Controllers\ReviewController;
-use App\Http\Controllers\StatsController;
 use App\Http\Controllers\SoireeController;
+use App\Http\Controllers\StatsController;
 use App\Http\Controllers\TransportController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\VenueController;
 use App\Http\Controllers\VireeController;
 use App\Http\Controllers\WeatherController;
@@ -64,8 +66,21 @@ Route::prefix('v1')->group(function (): void {
         Route::get('virees/current', [VireeController::class, 'current']);
         Route::post('virees/current/close', [VireeController::class, 'close']);
         Route::get('virees', [VireeController::class, 'index']);
+
+        // Social : recherche (déclarée avant users/{user:username}) et suivi.
+        // Throttles anti-énumération et anti-spam de follow.
+        Route::get('users/search', [UserController::class, 'search'])
+            ->middleware('throttle:30,1');
+        Route::post('users/{user:username}/follow', [FollowController::class, 'store'])
+            ->middleware('throttle:30,1');
+        Route::delete('users/{user:username}/follow', [FollowController::class, 'destroy']);
     });
 
     // Récap partageable d'une virée — public, après virees/current.
     Route::get('virees/{viree:public_id}', [VireeController::class, 'show']);
+
+    // Profils publics — après users/search (déclarée dans le groupe sanctum).
+    Route::get('users/{user:username}', [UserController::class, 'show']);
+    Route::get('users/{user:username}/followers', [UserController::class, 'followers']);
+    Route::get('users/{user:username}/following', [UserController::class, 'following']);
 });
