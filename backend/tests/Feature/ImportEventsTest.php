@@ -139,12 +139,21 @@ class ImportEventsTest extends TestCase
         $this->artisan('events:import')->assertExitCode(0);
 
         // L'import ne doit demander à l'open-data que la programmation à venir
-        // (date >= aujourd'hui) et de type concert/musique — pas tout l'agenda.
+        // (date >= aujourd'hui) et les types « sorties » — pas tout l'agenda
+        // (expos, ateliers, visites…).
         Http::assertSent(function (Request $request) {
             $url = urldecode($request->url());
 
             return str_contains($url, "types_libelles = 'Concert - Musique'")
-                && str_contains($url, 'date >= date');
+                && str_contains($url, "types_libelles = 'Fête - Festival'")
+                && str_contains($url, "types_libelles = 'Danse - Performance - Bal'")
+                && str_contains($url, "types_libelles = 'Théâtre - Humour'")
+                && str_contains($url, "types_libelles = 'Cirque - Magie - Marionnettes'")
+                && str_contains($url, "types_libelles = 'Projection'")
+                && str_contains($url, "types_libelles = 'Défilé - Parade - Arts de la rue'")
+                && str_contains($url, 'date >= date')
+                // Fenêtre bornée : toute la programmation des 2 prochains mois.
+                && str_contains($url, 'date <= date');
         });
     }
 
@@ -199,6 +208,35 @@ class ImportEventsTest extends TestCase
         $this->assertSame('chill', Venue::where('slug', 'la-salle')->firstOrFail()->mood);
         $this->assertSame('afterwork', Venue::where('slug', 'le-bar')->firstOrFail()->mood);
         $this->assertSame('decouverte', Venue::where('slug', 'la-place')->firstOrFail()->mood);
+    }
+
+    public function test_it_maps_the_new_event_types_to_moods(): void
+    {
+        $make = fn (string $nom, string $lieu, string $desc, string $type): array => [
+            'nom' => $nom,
+            'lieu' => $lieu,
+            'date' => '2026-07-10',
+            'heure_debut' => '20:00',
+            'description' => $desc,
+            'types_libelles' => [$type],
+        ];
+
+        Http::fake([
+            'data.nantesmetropole.fr/*' => Http::response([
+                'results' => [
+                    $make('Grande fete de quartier', 'Le Hangar', '<p>Concerts et animations.</p>', 'Fête - Festival'),
+                    $make('Grand bal populaire', 'La Halle', '<p>Orchestre en plein air.</p>', 'Danse - Performance - Bal'),
+                    $make('Plateau stand-up', 'Le Studio', '<p>Cinq humoristes sur scene.</p>', 'Théâtre - Humour'),
+                ],
+            ]),
+        ]);
+
+        $this->artisan('events:import')->assertExitCode(0);
+
+        // Les nouveaux types importés trouvent chacun une ambiance cohérente.
+        $this->assertSame('festif', Venue::where('slug', 'le-hangar')->firstOrFail()->mood);
+        $this->assertSame('festif', Venue::where('slug', 'la-halle')->firstOrFail()->mood);
+        $this->assertSame('decouverte', Venue::where('slug', 'le-studio')->firstOrFail()->mood);
     }
 
     public function test_it_is_idempotent_when_run_twice(): void

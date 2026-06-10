@@ -15,20 +15,36 @@ class ImportEvents extends Command
 
     protected $description = "Importe les évènements open-data de Nantes Métropole et met à jour lieux + évènements.";
 
-    /** Nombre maximum d'enregistrements ingérés (borne la pagination). */
-    private const MAX_RECORDS = 200;
+    /** Fenêtre d'import : toute la programmation des prochains mois. */
+    private const WINDOW_MONTHS = 2;
+
+    /**
+     * Garde-fou de pagination uniquement : la fenêtre de 2 mois sert ~550
+     * enregistrements, on ne veut juste pas boucler sans fin si l'API déraille.
+     */
+    private const MAX_RECORDS = 2000;
 
     /** Taille de page demandée à l'API OpenDataSoft. */
     private const PAGE_SIZE = 100;
 
     /**
      * Types d'évènements retenus : l'agenda métropolitain mélange tout (crèches,
-     * marchés, ateliers…). On ne garde que la programmation « nightlife »
-     * (concerts / musique) pour rester fidèle au concept NOCTAMBULE.
+     * marchés, ateliers…). On garde la programmation « sorties » au sens large
+     * (concerts, fêtes, bals, spectacles, séances du soir) pour rester fidèle au
+     * concept NOCTAMBULE. Exclus à dessein : expos, ateliers, visites, sport,
+     * conférences, et Contes/Jeux (mesurés à 90–98 % en journée, jeune public).
      *
      * @var list<string>
      */
-    private const NIGHTLIFE_TYPES = ['Concert - Musique'];
+    private const NIGHTLIFE_TYPES = [
+        'Concert - Musique',
+        'Fête - Festival',
+        'Danse - Performance - Bal',
+        'Théâtre - Humour',
+        'Cirque - Magie - Marionnettes',
+        'Projection',
+        'Défilé - Parade - Arts de la rue',
+    ];
 
     public function handle(): int
     {
@@ -102,12 +118,14 @@ class ImportEvents extends Command
         $records = [];
         $offset = 0;
 
-        // Clause ODSQL : programmation à venir (date >= aujourd'hui), restreinte
+        // Clause ODSQL : toute la programmation des 2 prochains mois, restreinte
         // aux types nightlife. `order_by date` remonte d'abord les plus proches.
         $typeClause = collect(self::NIGHTLIFE_TYPES)
             ->map(fn (string $type) => "types_libelles = '".str_replace("'", "''", $type)."'")
             ->implode(' or ');
-        $where = "date >= date'".Carbon::now()->toDateString()."' and ({$typeClause})";
+        $where = "date >= date'".Carbon::now()->toDateString()."'"
+            ." and date <= date'".Carbon::now()->addMonths(self::WINDOW_MONTHS)->toDateString()."'"
+            ." and ({$typeClause})";
 
         while (count($records) < self::MAX_RECORDS) {
             $response = Http::get($baseUrl, [
@@ -178,7 +196,10 @@ class ImportEvents extends Command
         $map = [
             'afterwork' => ['apero', 'afterwork', 'after work', '5 a 7', 'before', 'cocktail', 'degustation', 'brunch', 'aperitif'],
             'chill' => ['classique', 'vocal', 'choeur', 'choral', 'chorale', 'opera', 'orgue', 'piano', 'jazz', 'acoustique', 'baroque', 'lyrique', 'quatuor', 'gospel', 'chanson', 'blues', 'folk', 'ambient', 'intimiste', 'berceuse', 'conte', 'symphoni', 'requiem', 'recital'],
-            'festif' => ['dj', 'club', 'techno', 'electro', 'house', 'dancefloor', 'bass', 'garage', 'dub', 'reggae', 'ska', 'funk', 'disco', 'hip hop', 'hip-hop', 'rap', 'latino', 'salsa', 'afrobeat', 'groove', 'rave', 'soiree', 'bal ', 'dancehall', 'punk', 'metal', 'rock'],
+            'festif' => ['dj', 'club', 'techno', 'electro', 'house', 'dancefloor', 'bass', 'garage', 'dub', 'reggae', 'ska', 'funk', 'disco', 'hip hop', 'hip-hop', 'rap', 'latino', 'salsa', 'afrobeat', 'groove', 'rave', 'soiree', 'bal ', 'dancehall', 'punk', 'metal', 'rock', 'fete', 'festival', 'bal populaire', 'performance - bal', 'cabaret', 'carnaval', 'parade', 'defile'],
+            // Spectacles (théâtre, cirque, projections…) : une sortie à
+            // découvrir plutôt qu'une ambiance musicale.
+            'decouverte' => ['humour', 'theatre', 'comedie', 'impro', 'stand-up', 'stand up', 'one man show', 'one woman show', 'magie', 'cirque', 'marionnette', 'projection', 'cinema', 'cine-', 'seance', 'court metrage', 'documentaire'],
         ];
 
         foreach ($map as $mood => $keywords) {

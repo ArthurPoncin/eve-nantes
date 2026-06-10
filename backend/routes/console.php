@@ -11,3 +11,6 @@ Artisan::command('inspire', function (): void {
 // Ingestion quotidienne de l'open-data évènements de Nantes Métropole.
 Schedule::command('events:import')->dailyAt('04:00');
 
+// Les bars OSM bougent peu : un rafraîchissement hebdomadaire suffit.
+Schedule::command('venues:import')->weeklyOn(1, '03:30');
+
