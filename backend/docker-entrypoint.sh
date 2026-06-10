@@ -57,4 +57,12 @@ fi
 # une annotation cassée ne doit pas empêcher l'API de démarrer.
 php artisan l5-swagger:generate --ansi || echo "l5-swagger:generate a échoué (doc indisponible)"
 
+# En production, rafraîchit les données dès le déploiement, en arrière-plan :
+# le boot ne doit dépendre ni de l'open-data ni d'Overpass. Seul le conteneur
+# backend s'en charge (RUN_MIGRATIONS=false sur le scheduler), et le scheduler
+# prend le relais ensuite (events quotidien à 4h, venues hebdo le lundi).
+if [ "${APP_ENV:-local}" = "production" ] && [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
+    (php artisan events:import; php artisan venues:import) &
+fi
+
 exec "$@"
