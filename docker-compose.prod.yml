@@ -145,8 +145,6 @@ services:
       - no-new-privileges:true
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      # Auth GHCR (images privées) : réutilise le docker login fait sur l'hôte.
-      - /root/.docker/config.json:/config.json:ro
     environment:
       # Le client Docker embarqué (API 1.25) est refusé par les daemons récents.
       DOCKER_API_VERSION: "1.44"
