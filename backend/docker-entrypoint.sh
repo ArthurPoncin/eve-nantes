@@ -27,8 +27,14 @@ if [ "${APP_ENV:-local}" = "production" ]; then
         done > .env
 fi
 
-if [ ! -d vendor ] || [ ! -f vendor/autoload.php ]; then
+# vendor/ vit dans un volume nommé qui persiste entre les déploiements : on
+# réinstalle aussi quand composer.lock a changé (sinon une nouvelle dépendance
+# manque au runtime et l'app crash-loop — vécu avec l5-swagger).
+LOCK_HASH=$(md5sum composer.lock | cut -d' ' -f1)
+STAMP_FILE=vendor/.composer-lock-md5
+if [ ! -f vendor/autoload.php ] || [ "$(cat "$STAMP_FILE" 2>/dev/null)" != "$LOCK_HASH" ]; then
     composer install --no-interaction --prefer-dist --no-progress
+    echo "$LOCK_HASH" > "$STAMP_FILE"
 fi
 
 if ! grep -q "^APP_KEY=base64:" .env; then
