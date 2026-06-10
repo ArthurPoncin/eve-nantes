@@ -29,6 +29,13 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true },
   },
   {
+    // « Wrapped » nocturne : le dashboard de stats personnelles.
+    path: '/profil/stats',
+    name: 'profil-stats',
+    component: () => import('@/pages/ProfileStatsPage.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/favoris',
     name: 'favoris',
     component: () => import('@/pages/FavoritesPage.vue'),
