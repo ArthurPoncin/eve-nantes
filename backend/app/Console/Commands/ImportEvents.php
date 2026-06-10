@@ -30,9 +30,10 @@ class ImportEvents extends Command
     /**
      * Types d'évènements retenus : l'agenda métropolitain mélange tout (crèches,
      * marchés, ateliers…). On garde la programmation « sorties » au sens large
-     * (concerts, fêtes, bals, spectacles, séances du soir) pour rester fidèle au
-     * concept NOCTAMBULE. Exclus à dessein : expos, ateliers, visites, sport,
-     * conférences, et Contes/Jeux (mesurés à 90–98 % en journée, jeune public).
+     * (concerts, fêtes, bals, spectacles) pour rester fidèle au concept
+     * NOCTAMBULE. Exclus à dessein : expos, ateliers, visites, sport,
+     * conférences, cirque/projections (hors concept), et Contes/Jeux
+     * (mesurés à 90–98 % en journée, jeune public).
      *
      * @var list<string>
      */
@@ -41,8 +42,6 @@ class ImportEvents extends Command
         'Fête - Festival',
         'Danse - Performance - Bal',
         'Théâtre - Humour',
-        'Cirque - Magie - Marionnettes',
-        'Projection',
         'Défilé - Parade - Arts de la rue',
     ];
 
@@ -197,9 +196,9 @@ class ImportEvents extends Command
             'afterwork' => ['apero', 'afterwork', 'after work', '5 a 7', 'before', 'cocktail', 'degustation', 'brunch', 'aperitif'],
             'chill' => ['classique', 'vocal', 'choeur', 'choral', 'chorale', 'opera', 'orgue', 'piano', 'jazz', 'acoustique', 'baroque', 'lyrique', 'quatuor', 'gospel', 'chanson', 'blues', 'folk', 'ambient', 'intimiste', 'berceuse', 'conte', 'symphoni', 'requiem', 'recital'],
             'festif' => ['dj', 'club', 'techno', 'electro', 'house', 'dancefloor', 'bass', 'garage', 'dub', 'reggae', 'ska', 'funk', 'disco', 'hip hop', 'hip-hop', 'rap', 'latino', 'salsa', 'afrobeat', 'groove', 'rave', 'soiree', 'bal ', 'dancehall', 'punk', 'metal', 'rock', 'fete', 'festival', 'bal populaire', 'performance - bal', 'cabaret', 'carnaval', 'parade', 'defile'],
-            // Spectacles (théâtre, cirque, projections…) : une sortie à
-            // découvrir plutôt qu'une ambiance musicale.
-            'decouverte' => ['humour', 'theatre', 'comedie', 'impro', 'stand-up', 'stand up', 'one man show', 'one woman show', 'magie', 'cirque', 'marionnette', 'projection', 'cinema', 'cine-', 'seance', 'court metrage', 'documentaire'],
+            // Spectacles (type « Théâtre - Humour ») : une sortie à découvrir
+            // plutôt qu'une ambiance musicale.
+            'decouverte' => ['humour', 'theatre', 'comedie', 'impro', 'stand-up', 'stand up', 'one man show', 'one woman show', 'magie'],
         ];
 
         foreach ($map as $mood => $keywords) {

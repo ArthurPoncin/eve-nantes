@@ -148,9 +148,10 @@ class ImportEventsTest extends TestCase
                 && str_contains($url, "types_libelles = 'Fête - Festival'")
                 && str_contains($url, "types_libelles = 'Danse - Performance - Bal'")
                 && str_contains($url, "types_libelles = 'Théâtre - Humour'")
-                && str_contains($url, "types_libelles = 'Cirque - Magie - Marionnettes'")
-                && str_contains($url, "types_libelles = 'Projection'")
                 && str_contains($url, "types_libelles = 'Défilé - Parade - Arts de la rue'")
+                // Cirque/Projection/Contes/Jeux écartés : hors concept ou en journée.
+                && ! str_contains($url, 'Cirque')
+                && ! str_contains($url, 'Projection')
                 && str_contains($url, 'date >= date')
                 // Fenêtre bornée : toute la programmation des 2 prochains mois.
                 && str_contains($url, 'date <= date');
