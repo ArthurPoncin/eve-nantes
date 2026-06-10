@@ -20,7 +20,7 @@ fi
 # au serveur PHP embarqué : le process web ne lit que le fichier .env. En
 # production (pas de .env monté), on y matérialise donc l'environnement réel.
 if [ "${APP_ENV:-local}" = "production" ]; then
-    env | grep -E '^(APP_|DB_|REDIS_|CACHE_|SESSION_|QUEUE_|LOG_|MISTRAL_|RESEND_|FRONTEND_|OPENWEATHER_|WEATHER_|TAN_)' \
+    env | grep -E '^(APP_|DB_|REDIS_|CACHE_|SESSION_|QUEUE_|LOG_|MISTRAL_|RESEND_|FRONTEND_|OPENWEATHER_|WEATHER_|TAN_|L5_SWAGGER_)' \
         | while IFS='=' read -r key value; do
             printf '%s="%s"\n' "$key" "$value"
         done > .env
@@ -45,5 +45,9 @@ done
 if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
     php artisan migrate --force --ansi
 fi
+
+# Matérialise la spec OpenAPI servie sur /api/documentation. Non bloquant :
+# une annotation cassée ne doit pas empêcher l'API de démarrer.
+php artisan l5-swagger:generate --ansi || echo "l5-swagger:generate a échoué (doc indisponible)"
 
 exec "$@"

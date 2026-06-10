@@ -1,4 +1,5 @@
 /.phpunit.cache
+/storage/api-docs
 /storage/framework
 /storage/logs
 /node_modules
