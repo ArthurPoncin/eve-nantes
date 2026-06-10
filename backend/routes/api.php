@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BadgeController;
+use App\Http\Controllers\ChallengeController;
 use App\Http\Controllers\CheckinController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\FavoriteController;
@@ -51,6 +52,8 @@ Route::prefix('v1')->group(function (): void {
         Route::post('venues/{venue}/reviews', [ReviewController::class, 'store']);
         // Gamification : tous les badges, débloqués ou non pour l'utilisateur.
         Route::get('badges', [BadgeController::class, 'index']);
+        // Défis du mois, avec la progression de l'utilisateur.
+        Route::get('challenges', [ChallengeController::class, 'index']);
 
         // « Wrapped » nocturne : toutes les stats de l'utilisateur en un appel.
         Route::get('me/stats', [StatsController::class, 'show']);

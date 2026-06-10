@@ -69,4 +69,10 @@ class User extends Authenticatable
     {
         return $this->hasMany(Checkin::class);
     }
+
+    public function challenges(): BelongsToMany
+    {
+        return $this->belongsToMany(Challenge::class, 'user_challenges')
+            ->withPivot('progress', 'completed_at');
+    }
 }

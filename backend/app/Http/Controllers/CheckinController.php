@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Resources\VireeResource;
 use App\Models\Venue;
 use App\Services\BadgeService;
+use App\Services\ChallengeService;
 use App\Services\VireeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,6 +16,7 @@ class CheckinController extends Controller
     public function __construct(
         private readonly VireeService $virees,
         private readonly BadgeService $badges,
+        private readonly ChallengeService $challenges,
     ) {
     }
 
@@ -65,8 +67,10 @@ class CheckinController extends Controller
     {
         ['viree' => $viree, 'created' => $created] = $this->virees->checkIn($request->user(), $venue);
 
-        // Un check-in peut débloquer un badge (« habitué »...).
+        // Un check-in peut débloquer un badge (« habitué ») ou faire avancer
+        // un défi du mois.
         $this->badges->evaluate($request->user());
+        $this->challenges->evaluate($request->user());
 
         return response()->json(
             ['data' => new VireeResource($viree)],

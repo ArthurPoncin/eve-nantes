@@ -11,6 +11,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             NantesDemoSeeder::class,
             BadgeSeeder::class,
+            ChallengeSeeder::class,
         ]);
     }
 }

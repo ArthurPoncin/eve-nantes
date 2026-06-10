@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Resources\VireeResource;
 use App\Models\Viree;
 use App\Services\BadgeService;
+use App\Services\ChallengeService;
 use App\Services\VireeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,6 +16,7 @@ class VireeController extends Controller
     public function __construct(
         private readonly VireeService $virees,
         private readonly BadgeService $badges,
+        private readonly ChallengeService $challenges,
     ) {
     }
 
@@ -77,8 +79,10 @@ class VireeController extends Controller
 
         $viree = $this->virees->close($viree);
 
-        // Boucler une virée peut débloquer un badge (« arpenteur »...).
+        // Boucler une virée peut débloquer un badge (« arpenteur ») ou faire
+        // avancer un défi du mois.
         $this->badges->evaluate($request->user());
+        $this->challenges->evaluate($request->user());
 
         return response()->json(['data' => new VireeResource($viree)]);
     }
