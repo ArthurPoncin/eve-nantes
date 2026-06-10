@@ -51,7 +51,8 @@ async function onSubmit(): Promise<void> {
       await auth.login({ email: form.email, password: form.password })
     }
     const { redirect } = route.query
-    const target = (Array.isArray(redirect) ? redirect[0] : redirect) ?? '/'
+    // Connecté sans destination : direction le fil, le « chez-soi » social.
+    const target = (Array.isArray(redirect) ? redirect[0] : redirect) ?? '/feed'
     await router.push(target)
   } catch (error) {
     errorMessage.value = extractError(error)

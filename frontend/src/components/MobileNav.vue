@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
+const auth = useAuthStore()
 const isOpen = ref(false)
 const root = ref<HTMLElement | null>(null)
 
@@ -71,6 +73,16 @@ onBeforeUnmount(() => {
         aria-label="Navigation"
         class="glass-strong absolute right-0 top-full z-50 mt-3 flex w-48 flex-col rounded-2xl border border-hairline bg-glass-strong p-2 shadow-xl shadow-black/30"
       >
+        <RouterLink
+          v-if="auth.isAuthenticated"
+          to="/feed"
+          role="menuitem"
+          data-testid="mobile-nav-feed"
+          class="rounded-xl px-3 py-2 font-mono text-[11px] uppercase tracking-[0.18em] text-text-2 transition hover:bg-glass hover:text-text"
+          @click="close"
+        >
+          Fil
+        </RouterLink>
         <RouterLink
           to="/soiree"
           role="menuitem"

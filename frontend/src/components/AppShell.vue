@@ -19,6 +19,13 @@ const auth = useAuthStore()
       </RouterLink>
       <nav class="flex items-center gap-5">
         <RouterLink
+          v-if="auth.isAuthenticated"
+          to="/feed"
+          class="hidden font-mono text-[11px] uppercase tracking-[0.18em] text-text-2 transition hover:text-text sm:inline"
+        >
+          Fil
+        </RouterLink>
+        <RouterLink
           to="/soiree"
           class="hidden font-mono text-[11px] uppercase tracking-[0.18em] text-text-2 transition hover:text-text sm:inline"
         >

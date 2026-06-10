@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
 
 vi.mock('vue-router', async () => {
   const { RouterLinkStub } = await import('@vue/test-utils')
@@ -14,6 +15,9 @@ function mountNav() {
 }
 
 beforeEach(() => {
+  // Le burger lit le store auth (lien « Fil » réservé aux connectés).
+  setActivePinia(createPinia())
+  localStorage.clear()
   document.body.innerHTML = ''
 })
 
@@ -61,5 +65,20 @@ describe('MobileNav', () => {
     await wrapper.vm.$nextTick()
 
     expect(wrapper.find('[data-testid="mobile-nav"]').exists()).toBe(false)
+  })
+
+  it('propose le lien Fil quand on est connecté', async () => {
+    localStorage.setItem('noctambule.token', 'tok_abc')
+    setActivePinia(createPinia())
+
+    const wrapper = mountNav()
+    await wrapper.find('[data-testid="mobile-nav-button"]').trigger('click')
+
+    const links = wrapper.findAllComponents(RouterLinkStub)
+    expect(links.map((link) => link.props('to'))).toEqual([
+      '/feed',
+      '/soiree',
+      '/explorer',
+    ])
   })
 })

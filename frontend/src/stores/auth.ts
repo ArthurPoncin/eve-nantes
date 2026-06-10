@@ -2,6 +2,7 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { fetchMe, loginRequest, logoutRequest, registerRequest } from '@/api/auth'
 import { clearToken, getToken, setToken } from '@/api/token-storage'
+import { useFeedStore } from '@/stores/feed'
 import { useVireeStore } from '@/stores/viree'
 import type { AuthUser, Credentials, RegisterPayload } from '@/types/auth'
 
@@ -40,8 +41,9 @@ export const useAuthStore = defineStore('auth', () => {
       // On nettoie la session locale même si l'appel backend échoue (token déjà expiré, etc.).
     } finally {
       clearSession()
-      // La virée en cours appartient à la session : on l'oublie aussi.
+      // La virée en cours et le fil appartiennent à la session : on les oublie.
       useVireeStore().reset()
+      useFeedStore().reset()
     }
   }
 
