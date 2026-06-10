@@ -16,6 +16,16 @@ if [ ! -f .env ]; then
     cp .env.example .env
 fi
 
+# `php artisan serve` ne transmet qu'une whitelist de variables d'environnement
+# au serveur PHP embarqué : le process web ne lit que le fichier .env. En
+# production (pas de .env monté), on y matérialise donc l'environnement réel.
+if [ "${APP_ENV:-local}" = "production" ]; then
+    env | grep -E '^(APP_|DB_|REDIS_|CACHE_|SESSION_|QUEUE_|LOG_|MISTRAL_|RESEND_|FRONTEND_|OPENWEATHER_|WEATHER_|TAN_)' \
+        | while IFS='=' read -r key value; do
+            printf '%s="%s"\n' "$key" "$value"
+        done > .env
+fi
+
 if [ ! -d vendor ] || [ ! -f vendor/autoload.php ]; then
     composer install --no-interaction --prefer-dist --no-progress
 fi
