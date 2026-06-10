@@ -6,6 +6,7 @@ use App\Http\Controllers\ChallengeController;
 use App\Http\Controllers\CheckinController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\FavoriteController;
+use App\Http\Controllers\FeedController;
 use App\Http\Controllers\FollowController;
 use App\Http\Controllers\KudosController;
 use App\Http\Controllers\PilierController;
@@ -74,6 +75,9 @@ Route::prefix('v1')->group(function (): void {
         Route::post('virees/{viree:public_id}/kudos', [KudosController::class, 'store'])
             ->middleware('throttle:30,1');
         Route::delete('virees/{viree:public_id}/kudos', [KudosController::class, 'destroy']);
+
+        // Le fil : virées bouclées des noctambules suivis (curseur).
+        Route::get('feed', [FeedController::class, 'index']);
 
         // Social : recherche (déclarée avant users/{user:username}) et suivi.
         // Throttles anti-énumération et anti-spam de follow.
