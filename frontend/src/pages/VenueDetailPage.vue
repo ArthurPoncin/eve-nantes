@@ -5,6 +5,7 @@ import { fetchVenue } from '@/api/venues'
 import { useAuthStore } from '@/stores/auth'
 import { useFavoritesStore } from '@/stores/favorites'
 import FavoriteButton from '@/components/FavoriteButton.vue'
+import TransportWidget from '@/components/TransportWidget.vue'
 import WeatherWidget from '@/components/WeatherWidget.vue'
 import VenueMap from '@/components/VenueMap.vue'
 import type { EventSummary } from '@/types/event'
@@ -352,6 +353,7 @@ onMounted(() => {
           :name="venue.name"
           :address="fullAddress"
         />
+        <TransportWidget :slug="venue.slug" />
         <div class="grid gap-3" :class="venue.capacity !== null ? 'sm:grid-cols-2' : ''">
           <WeatherWidget />
           <div

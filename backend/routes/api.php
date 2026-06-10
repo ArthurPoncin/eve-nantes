@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\SoireeController;
+use App\Http\Controllers\TransportController;
 use App\Http\Controllers\VenueController;
 use App\Http\Controllers\WeatherController;
 use Illuminate\Support\Facades\Route;
@@ -14,6 +15,8 @@ Route::prefix('v1')->group(function (): void {
     Route::get('events', [EventController::class, 'index']);
     Route::get('venues', [VenueController::class, 'index']);
     Route::get('venues/{venue}', [VenueController::class, 'show']);
+    // Prochains passages TAN à l'arrêt le plus proche du lieu (open.tan.fr).
+    Route::get('venues/{venue}/transport', [TransportController::class, 'show']);
 
     // Cœur du service : compose une soirée (lieu + event + météo + narration IA).
     Route::post('soiree/generate', [SoireeController::class, 'generate']);

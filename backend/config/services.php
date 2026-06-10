@@ -17,6 +17,13 @@ return [
         'longitude' => env('WEATHER_LONGITUDE', -1.5536),
     ],
 
+    // Transports TAN/Naolib (tram/busway/bus nantais) : API publique, sans clé.
+    // L'API JSON historique (open.tan.fr) n'est plus alimentée depuis déc. 2025
+    // (remplacée par du SIRI à clé) ; le miroir v2 preprod sert encore le temps réel.
+    'tan' => [
+        'endpoint' => env('TAN_API_URL', 'https://openv2-preprod.tan.fr/ewp'),
+    ],
+
     'nantes_open_data' => [
         'events_url' => env('NANTES_EVENTS_URL', 'https://data.nantesmetropole.fr/api/explore/v2.1/catalog/datasets/244400404_agenda-evenements-nantes-metropole_v2/records'),
     ],
