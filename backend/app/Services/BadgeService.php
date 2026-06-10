@@ -77,6 +77,12 @@ class BadgeService
                 ->exists(),
             // Premier avis posté
             'reviews_count' => $user->reviews()->count() >= $min,
+            // 10 check-ins « J'y suis »
+            'checkins_count' => $user->checkins()->count() >= $min,
+            // 5 virées bouclées
+            'virees_count' => $user->virees()->whereNotNull('ended_at')->count() >= $min,
+            // 15 km arpentés de nuit (min exprimé en km, distance stockée en m)
+            'night_km' => $user->virees()->whereNotNull('ended_at')->sum('distance_m') >= $min * 1000,
             default => false,
         };
     }

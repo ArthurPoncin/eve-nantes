@@ -8,8 +8,9 @@ use Illuminate\Database\Seeder;
 class BadgeSeeder extends Seeder
 {
     /**
-     * Les 5 badges NOCTAMBULE. Les critères collent au schéma réel :
-     * soirées partagées (table soirees) et avis postés (table reviews).
+     * Les 8 badges NOCTAMBULE. Les critères collent au schéma réel :
+     * soirées partagées (soirees), avis postés (reviews), check-ins et
+     * virées bouclées (checkins, virees).
      */
     public function run(): void
     {
@@ -48,6 +49,27 @@ class BadgeSeeder extends Seeder
                 'description' => 'Premier avis posté sur un lieu',
                 'icon' => '☆',
                 'criteria' => ['type' => 'reviews_count', 'min' => 1],
+            ],
+            [
+                'id' => 'habitue',
+                'label' => 'Habitué',
+                'description' => '10 check-ins « J\'y suis »',
+                'icon' => '⚑',
+                'criteria' => ['type' => 'checkins_count', 'min' => 10],
+            ],
+            [
+                'id' => 'arpenteur',
+                'label' => 'Arpenteur',
+                'description' => '5 virées bouclées',
+                'icon' => '➤',
+                'criteria' => ['type' => 'virees_count', 'min' => 5],
+            ],
+            [
+                'id' => 'grand-marcheur',
+                'label' => 'Grand Marcheur',
+                'description' => '15 km arpentés de nuit',
+                'icon' => '∿',
+                'criteria' => ['type' => 'night_km', 'min' => 15],
             ],
         ];
 

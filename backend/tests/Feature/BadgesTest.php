@@ -2,8 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\Checkin;
 use App\Models\User;
 use App\Models\Venue;
+use App\Models\Viree;
 use Database\Seeders\BadgeSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -51,7 +53,7 @@ class BadgesTest extends TestCase
 
         $response = $this->getJson('/api/v1/badges');
 
-        $response->assertOk()->assertJsonCount(5);
+        $response->assertOk()->assertJsonCount(8);
         foreach ($response->json() as $badge) {
             $this->assertFalse($badge['unlocked']);
             $this->assertNull($badge['unlocked_at']);
@@ -111,6 +113,43 @@ class BadgesTest extends TestCase
             ->filter(fn (array $badge) => $badge['unlocked']);
 
         $this->assertCount(0, $unlocked);
+    }
+
+    public function test_ten_checkins_unlock_the_habitue_badge(): void
+    {
+        $user = $this->makeUser();
+        $venue = Venue::factory()->create();
+        $viree = Viree::factory()->active()->create(['user_id' => $user->id]);
+        Checkin::factory()->count(10)->create([
+            'viree_id' => $viree->id,
+            'user_id' => $user->id,
+            'venue_id' => $venue->id,
+        ]);
+        Sanctum::actingAs($user);
+
+        // L'évaluation tourne au prochain événement gamifié (ici un avis).
+        $this->postJson("/api/v1/venues/{$venue->slug}/reviews", ['rating' => 4]);
+
+        $badges = collect($this->getJson('/api/v1/badges')->json());
+        $this->assertTrue($badges->firstWhere('id', 'habitue')['unlocked']);
+    }
+
+    public function test_fifteen_night_kilometers_unlock_the_grand_marcheur_badge(): void
+    {
+        $user = $this->makeUser();
+        $venue = Venue::factory()->create();
+        Viree::factory()->count(2)->create([
+            'user_id' => $user->id,
+            'distance_m' => 8000,
+        ]);
+        Sanctum::actingAs($user);
+
+        $this->postJson("/api/v1/venues/{$venue->slug}/reviews", ['rating' => 4]);
+
+        $badges = collect($this->getJson('/api/v1/badges')->json());
+        $this->assertTrue($badges->firstWhere('id', 'grand-marcheur')['unlocked']);
+        // 2 virées seulement : « arpenteur » (5 virées) reste verrouillé.
+        $this->assertFalse($badges->firstWhere('id', 'arpenteur')['unlocked']);
     }
 
     public function test_a_badge_is_not_unlocked_twice(): void
