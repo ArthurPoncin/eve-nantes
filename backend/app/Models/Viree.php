@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
@@ -47,6 +48,12 @@ class Viree extends Model
     public function checkins(): HasMany
     {
         return $this->hasMany(Checkin::class)->orderBy('happened_at')->orderBy('id');
+    }
+
+    /** Ceux qui ont trinqué (« Santé ! ») à cette virée. */
+    public function kudosGivers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'kudos')->withTimestamps();
     }
 
     /** Virées en cours (pas encore clôturées). */

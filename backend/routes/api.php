@@ -7,6 +7,7 @@ use App\Http\Controllers\CheckinController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\FollowController;
+use App\Http\Controllers\KudosController;
 use App\Http\Controllers\PilierController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\SoireeController;
@@ -69,6 +70,10 @@ Route::prefix('v1')->group(function (): void {
         Route::get('virees', [VireeController::class, 'index']);
         // Visibilité d'un récap : publique (défaut) ou réservée aux abonnés.
         Route::patch('virees/{viree:public_id}/visibility', [VireePrivacyController::class, 'update']);
+        // « Santé ! » : le kudos NOCTAMBULE, throttlé contre le spam.
+        Route::post('virees/{viree:public_id}/kudos', [KudosController::class, 'store'])
+            ->middleware('throttle:30,1');
+        Route::delete('virees/{viree:public_id}/kudos', [KudosController::class, 'destroy']);
 
         // Social : recherche (déclarée avant users/{user:username}) et suivi.
         // Throttles anti-énumération et anti-spam de follow.
@@ -81,6 +86,7 @@ Route::prefix('v1')->group(function (): void {
 
     // Récap partageable d'une virée — public, après virees/current.
     Route::get('virees/{viree:public_id}', [VireeController::class, 'show']);
+    Route::get('virees/{viree:public_id}/kudos', [KudosController::class, 'index']);
 
     // Profils publics — après users/search (déclarée dans le groupe sanctum).
     Route::get('users/{user:username}', [UserController::class, 'show']);
