@@ -39,6 +39,12 @@ const routes: RouteRecordRaw[] = [
     name: 'venue-detail',
     component: () => import('@/pages/VenueDetailPage.vue'),
   },
+  {
+    // Récap de virée, partageable : public, identifié par UUID.
+    path: '/viree/:publicId',
+    name: 'viree',
+    component: () => import('@/pages/VireePage.vue'),
+  },
 ]
 
 export const router = createRouter({

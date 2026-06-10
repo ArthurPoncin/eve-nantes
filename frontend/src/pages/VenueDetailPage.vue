@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { fetchVenue } from '@/api/venues'
 import { useAuthStore } from '@/stores/auth'
 import { useFavoritesStore } from '@/stores/favorites'
+import CheckinButton from '@/components/CheckinButton.vue'
 import FavoriteButton from '@/components/FavoriteButton.vue'
 import ReviewsSection from '@/components/ReviewsSection.vue'
 import TransportWidget from '@/components/TransportWidget.vue'
@@ -264,6 +265,8 @@ onMounted(() => {
 
       <!-- Appel à l'action -->
       <div class="flex items-center gap-3">
+        <!-- Check-in « J'y suis » : démarre ou poursuit la virée de la nuit. -->
+        <CheckinButton v-if="auth.isAuthenticated" :slug="venue.slug" />
         <button
           v-if="auth.isAuthenticated"
           type="button"

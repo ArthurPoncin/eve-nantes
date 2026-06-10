@@ -4,6 +4,7 @@ import { useAuthStore } from '@/stores/auth'
 import MobileNav from './MobileNav.vue'
 import ModeToggle from './ModeToggle.vue'
 import UserMenu from './UserMenu.vue'
+import VireeBanner from './VireeBanner.vue'
 
 const auth = useAuthStore()
 </script>
@@ -43,6 +44,8 @@ const auth = useAuthStore()
         <MobileNav />
       </nav>
     </header>
+    <!-- Virée en cours : visible partout tant qu'elle n'est pas clôturée. -->
+    <VireeBanner />
     <slot />
   </div>
 </template>

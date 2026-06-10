@@ -1,13 +1,33 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import BadgeGrid from '@/components/BadgeGrid.vue'
+import { fetchVirees } from '@/api/virees'
 import { useAuthStore } from '@/stores/auth'
+import type { Viree } from '@/types/viree'
 
 const auth = useAuthStore()
 const router = useRouter()
 
 const initial = computed(() => auth.user?.username?.charAt(0).toUpperCase() ?? '?')
+
+const virees = ref<Viree[]>([])
+const vireesLoaded = ref(false)
+
+function vireeDate(viree: Viree): string {
+  return new Date(viree.started_at).toLocaleDateString('fr-FR', {
+    day: 'numeric',
+    month: 'short',
+  })
+}
+
+function vireeSummary(viree: Viree): string {
+  const venues = `${viree.stats.venues} ${viree.stats.venues > 1 ? 'lieux' : 'lieu'}`
+  const meters = viree.stats.distance_m
+  if (meters === null) return venues
+  const km = (meters / 1000).toLocaleString('fr-FR', { maximumFractionDigits: 1 })
+  return `${venues} · ${km} km`
+}
 
 onMounted(async () => {
   if (auth.user === null) {
@@ -16,6 +36,13 @@ onMounted(async () => {
     } catch {
       // Token invalide ou expiré : on laisse la session en l'état, l'affichage retombe sur les valeurs vides.
     }
+  }
+
+  try {
+    virees.value = await fetchVirees()
+    vireesLoaded.value = true
+  } catch {
+    // Historique indisponible : la section reste masquée.
   }
 })
 
@@ -78,6 +105,32 @@ async function onLogout(): Promise<void> {
       <div class="relative mt-8">
         <BadgeGrid />
       </div>
+
+      <!-- Historique des virées bouclées (façon activités Strava) -->
+      <section v-if="vireesLoaded" class="relative mt-8 flex flex-col gap-2">
+        <h2 class="font-mono text-[10px] uppercase tracking-[0.3em] text-text-3">
+          Mes virées
+        </h2>
+        <p
+          v-if="virees.length === 0"
+          data-testid="profile-virees-empty"
+          class="rounded-2xl border border-hairline bg-glass px-4 py-4 text-center font-mono text-[10px] uppercase tracking-[0.16em] text-text-3"
+        >
+          Aucune virée bouclée — pointe-toi quelque part ce soir.
+        </p>
+        <RouterLink
+          v-for="viree in virees"
+          :key="viree.public_id"
+          :to="`/viree/${viree.public_id}`"
+          data-testid="profile-viree"
+          class="flex items-center justify-between gap-3 rounded-2xl border border-hairline bg-glass px-4 py-3 transition hover:border-hairline-bright"
+        >
+          <span class="font-serif italic text-text">{{ vireeDate(viree) }}</span>
+          <span class="font-mono text-[10px] uppercase tracking-[0.16em] text-text-2">
+            {{ vireeSummary(viree) }}
+          </span>
+        </RouterLink>
+      </section>
 
       <button
         type="button"
