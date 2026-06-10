@@ -13,7 +13,9 @@ interface VenueFixture {
   longitude: number | null
 }
 
-function venue(overrides: Partial<VenueFixture> & Pick<VenueFixture, 'id' | 'name' | 'slug' | 'mood'>): VenueFixture {
+function venue(
+  overrides: Partial<VenueFixture> & Pick<VenueFixture, 'id' | 'name' | 'slug' | 'mood'>,
+): VenueFixture {
   return {
     address_line: '1 Rue de la Nuit',
     postal_code: '44000',
@@ -25,7 +27,12 @@ function venue(overrides: Partial<VenueFixture> & Pick<VenueFixture, 'id' | 'nam
   }
 }
 
-const FERRAILLEUR = venue({ id: 1, name: 'Le Ferrailleur', slug: 'le-ferrailleur', mood: 'festif' })
+const FERRAILLEUR = venue({
+  id: 1,
+  name: 'Le Ferrailleur',
+  slug: 'le-ferrailleur',
+  mood: 'festif',
+})
 const LE_NID = venue({ id: 2, name: 'Le Nid', slug: 'le-nid', mood: 'chill' })
 
 test.beforeEach(async ({ page }) => {
@@ -50,7 +57,8 @@ test.beforeEach(async ({ page }) => {
     (url) => url.pathname.endsWith('/api/v1/venues'),
     async (route: Route) => {
       const mood = new URL(route.request().url()).searchParams.get('mood')
-      const data = mood === null ? [FERRAILLEUR, LE_NID] : mood === 'festif' ? [FERRAILLEUR] : []
+      const data =
+        mood === null ? [FERRAILLEUR, LE_NID] : mood === 'festif' ? [FERRAILLEUR] : []
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
