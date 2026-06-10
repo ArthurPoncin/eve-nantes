@@ -96,7 +96,10 @@ services:
     image: ghcr.io/arthurponcin/noctambule-backend:latest
     container_name: noctambule-scheduler
     restart: unless-stopped
-    environment: *backend-env
+    environment:
+      <<: *backend-env
+      # Seul le backend migre au démarrage (évite la migration concurrente).
+      RUN_MIGRATIONS: "false"
     volumes:
       - backend_vendor:/var/www/html/vendor
     # Planificateur Laravel : events:import s'exécute tous les jours à 04:00.

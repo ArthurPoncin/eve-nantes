@@ -39,6 +39,11 @@ until php -r "exit(@fsockopen(getenv('DB_HOST'), (int)getenv('DB_PORT')) ? 0 : 1
     sleep 2
 done
 
-php artisan migrate --force --ansi
+# RUN_MIGRATIONS=false sur les services secondaires (scheduler) : seul le
+# backend migre, sinon les deux conteneurs migrent en même temps au démarrage
+# et l'un des deux plante sur une création de table concurrente.
+if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
+    php artisan migrate --force --ansi
+fi
 
 exec "$@"
