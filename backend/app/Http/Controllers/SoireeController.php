@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Soiree;
 use App\Models\Venue;
+use App\Services\BadgeService;
 use App\Services\MailService;
 use App\Services\SoireeService;
 use Illuminate\Http\JsonResponse;
@@ -35,7 +36,7 @@ class SoireeController extends Controller
     /**
      * Persiste une soirée et l'envoie par email (Resend). Public + throttlé.
      */
-    public function share(Request $request, MailService $mail): JsonResponse
+    public function share(Request $request, MailService $mail, BadgeService $badges): JsonResponse
     {
         $validated = $request->validate([
             'email' => ['required', 'email'],
@@ -46,8 +47,12 @@ class SoireeController extends Controller
             'weather' => ['sometimes', 'array'],
         ]);
 
+        // Route publique : on rattache quand même l'utilisateur si un token
+        // Sanctum accompagne la requête (la garde par défaut ne le résout pas).
+        $user = $request->user('sanctum');
+
         $soiree = Soiree::create([
-            'user_id' => optional($request->user())->id,
+            'user_id' => $user?->id,
             'venue_id' => $validated['venue_id'],
             'event_id' => $validated['event_id'] ?? null,
             'mood' => $validated['mood'],
@@ -56,6 +61,11 @@ class SoireeController extends Controller
             'shared_with' => [$validated['email']],
         ]);
         $soiree->load(['venue', 'event']);
+
+        // Chaque soirée partagée peut débloquer un badge (noctambule, fidèle…).
+        if ($user !== null) {
+            $badges->evaluate($user);
+        }
 
         if (! $mail->shareSoiree($soiree, $validated['email'])) {
             return response()->json(

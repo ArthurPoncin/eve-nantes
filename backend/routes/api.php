@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BadgeController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\FavoriteController;
+use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\SoireeController;
 use App\Http\Controllers\TransportController;
 use App\Http\Controllers\VenueController;
@@ -17,6 +19,8 @@ Route::prefix('v1')->group(function (): void {
     Route::get('venues/{venue}', [VenueController::class, 'show']);
     // Prochains passages TAN à l'arrêt le plus proche du lieu (open.tan.fr).
     Route::get('venues/{venue}/transport', [TransportController::class, 'show']);
+    // Avis publics d'un lieu (note moyenne + commentaires).
+    Route::get('venues/{venue}/reviews', [ReviewController::class, 'index']);
 
     // Cœur du service : compose une soirée (lieu + event + météo + narration IA).
     Route::post('soiree/generate', [SoireeController::class, 'generate']);
@@ -37,5 +41,9 @@ Route::prefix('v1')->group(function (): void {
         Route::get('favorites', [FavoriteController::class, 'index']);
         Route::post('venues/{venue}/favorite', [FavoriteController::class, 'store']);
         Route::delete('venues/{venue}/favorite', [FavoriteController::class, 'destroy']);
+        // Un avis par utilisateur et par lieu : reposter remplace le précédent.
+        Route::post('venues/{venue}/reviews', [ReviewController::class, 'store']);
+        // Gamification : tous les badges, débloqués ou non pour l'utilisateur.
+        Route::get('badges', [BadgeController::class, 'index']);
     });
 });
