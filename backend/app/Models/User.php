@@ -59,4 +59,14 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Badge::class, 'user_badges')->withPivot('unlocked_at');
     }
+
+    public function virees(): HasMany
+    {
+        return $this->hasMany(Viree::class);
+    }
+
+    public function checkins(): HasMany
+    {
+        return $this->hasMany(Checkin::class);
+    }
 }

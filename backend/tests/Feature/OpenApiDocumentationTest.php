@@ -45,6 +45,11 @@ class OpenApiDocumentationTest extends TestCase
         ['post', '/api/v1/venues/{venue}/favorite'],
         ['delete', '/api/v1/venues/{venue}/favorite'],
         ['get', '/api/v1/badges'],
+        ['post', '/api/v1/venues/{venue}/checkin'],
+        ['get', '/api/v1/virees/current'],
+        ['post', '/api/v1/virees/current/close'],
+        ['get', '/api/v1/virees'],
+        ['get', '/api/v1/virees/{viree}'],
     ];
 
     public function test_la_spec_openapi_se_genere_et_documente_tous_les_endpoints(): void
@@ -77,6 +82,10 @@ class OpenApiDocumentationTest extends TestCase
             ['delete', '/api/v1/venues/{venue}/favorite'],
             ['post', '/api/v1/venues/{venue}/reviews'],
             ['get', '/api/v1/badges'],
+            ['post', '/api/v1/venues/{venue}/checkin'],
+            ['get', '/api/v1/virees/current'],
+            ['post', '/api/v1/virees/current/close'],
+            ['get', '/api/v1/virees'],
         ] as [$method, $path]) {
             $this->assertSame(
                 [['sanctum' => []]],

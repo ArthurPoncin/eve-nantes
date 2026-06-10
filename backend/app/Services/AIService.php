@@ -29,11 +29,39 @@ class AIService
         return Cache::remember(
             'cache:ai:'.md5((string) json_encode($context)),
             now()->addHour(),
-            fn (): string => $this->callMistral($context, $key) ?? $this->fallback($context),
+            fn (): string => $this->callMistral(
+                $this->systemPrompt(),
+                $this->userPrompt($context),
+                $key,
+            ) ?? $this->fallback($context),
         );
     }
 
-    private function callMistral(array $context, string $key): ?string
+    /**
+     * Narration du récap d'une virée (suite de check-ins). Mêmes garde-fous
+     * que narrate() : contexte strictement typé, cache 1h, fallback local.
+     *
+     * @param  array{venues: list<string>, moods: list<string>, distance_km: string, duration_min: int, weather?: string}  $context
+     */
+    public function narrateViree(array $context): string
+    {
+        $key = (string) config('services.mistral.key', '');
+        if ($key === '') {
+            return $this->vireeFallback($context);
+        }
+
+        return Cache::remember(
+            'cache:ai:'.md5((string) json_encode($context)),
+            now()->addHour(),
+            fn (): string => $this->callMistral(
+                $this->vireeSystemPrompt(),
+                $this->vireeUserPrompt($context),
+                $key,
+            ) ?? $this->vireeFallback($context),
+        );
+    }
+
+    private function callMistral(string $systemPrompt, string $userPrompt, string $key): ?string
     {
         try {
             $response = Http::withToken($key)
@@ -44,8 +72,8 @@ class AIService
                     'temperature' => 0.7,
                     'max_tokens' => 160,
                     'messages' => [
-                        ['role' => 'system', 'content' => $this->systemPrompt()],
-                        ['role' => 'user', 'content' => $this->userPrompt($context)],
+                        ['role' => 'system', 'content' => $systemPrompt],
+                        ['role' => 'user', 'content' => $userPrompt],
                     ],
                 ]);
 
@@ -97,5 +125,54 @@ class AIService
         $weather = ! empty($context['weather']) ? ", ciel {$context['weather']}" : '';
 
         return "Ce soir, cap sur {$context['venue']}{$event}{$weather} — l'ambiance {$context['mood']} t'attend.";
+    }
+
+    private function vireeSystemPrompt(): string
+    {
+        return 'Tu es le guide nocturne de NOCTAMBULE à Nantes. '
+            .'Résume cette virée nocturne en deux phrases courtes maximum, '
+            .'chaleureuses et évocatrices, en français, sans emoji ni guillemets.';
+    }
+
+    /**
+     * @param  array{venues: list<string>, moods: list<string>, distance_km: string, duration_min: int, weather?: string}  $context
+     */
+    private function vireeUserPrompt(array $context): string
+    {
+        $parts = [
+            'Étapes dans l\'ordre: '.implode(', ', $context['venues']),
+            'Ambiances: '.implode(', ', $context['moods']),
+            'Distance à pied: '.$context['distance_km'].' km',
+            'Durée: '.$context['duration_min'].' minutes',
+        ];
+
+        if (! empty($context['weather'])) {
+            $parts[] = 'Météo: '.$context['weather'];
+        }
+
+        return implode('. ', $parts).'.';
+    }
+
+    /**
+     * @param  array{venues: list<string>, moods: list<string>, distance_km: string, duration_min: int, weather?: string}  $context
+     */
+    private function vireeFallback(array $context): string
+    {
+        $venues = $context['venues'];
+        $count = count($venues);
+
+        if ($count === 0) {
+            return 'Une virée éclair dans la nuit nantaise — la prochaine sera la bonne.';
+        }
+
+        if ($count === 1) {
+            return "Une nuit fidèle à {$venues[0]} — parfois, un seul lieu suffit.";
+        }
+
+        $first = $venues[0];
+        $last = $venues[$count - 1];
+
+        return "De {$first} à {$last}, {$count} étapes et {$context['distance_km']} km "
+            .'dans la nuit nantaise — une virée qui compte.';
     }
 }

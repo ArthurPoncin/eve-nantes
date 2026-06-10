@@ -2,12 +2,14 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BadgeController;
+use App\Http\Controllers\CheckinController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\SoireeController;
 use App\Http\Controllers\TransportController;
 use App\Http\Controllers\VenueController;
+use App\Http\Controllers\VireeController;
 use App\Http\Controllers\WeatherController;
 use Illuminate\Support\Facades\Route;
 
@@ -45,5 +47,15 @@ Route::prefix('v1')->group(function (): void {
         Route::post('venues/{venue}/reviews', [ReviewController::class, 'store']);
         // Gamification : tous les badges, débloqués ou non pour l'utilisateur.
         Route::get('badges', [BadgeController::class, 'index']);
+
+        // Virées façon Strava : le 1er check-in de la nuit démarre la virée.
+        Route::post('venues/{venue}/checkin', [CheckinController::class, 'store']);
+        // Déclarée avant virees/{viree:public_id} pour que « current » prime.
+        Route::get('virees/current', [VireeController::class, 'current']);
+        Route::post('virees/current/close', [VireeController::class, 'close']);
+        Route::get('virees', [VireeController::class, 'index']);
     });
+
+    // Récap partageable d'une virée — public, après virees/current.
+    Route::get('virees/{viree:public_id}', [VireeController::class, 'show']);
 });
