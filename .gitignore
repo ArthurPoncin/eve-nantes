@@ -8,9 +8,14 @@ Thumbs.db
 
 # Tooling artifacts
 .playwright-mcp/
+.claude/
+
+# Références design locales (maquette HTML, photos d'inspiration) — trop lourdes pour le repo
+/docs/design/
 
 # Dépendances (les deps backend vivent dans backend/vendor)
 /vendor
+/node_modules/
 
 # Direct envs (each subproject also has its own .gitignore)
 .env
