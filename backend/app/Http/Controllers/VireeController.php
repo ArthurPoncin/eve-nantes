@@ -158,7 +158,7 @@ class VireeController extends Controller
         // que de son auteur et de ses abonnés — 404 pour ne rien révéler.
         abort_unless($viree->isVisibleTo(auth('sanctum')->user()), 404);
 
-        $viree->load('checkins.venue');
+        $viree->load('checkins.venue', 'user');
 
         return response()->json(['data' => new VireeResource($viree)]);
     }

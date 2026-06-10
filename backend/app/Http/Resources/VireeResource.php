@@ -34,6 +34,7 @@ use OpenApi\Attributes as OA;
         ),
         new OA\Property(property: 'narrative', type: 'string', nullable: true),
         new OA\Property(property: 'weather', type: 'object', nullable: true),
+        new OA\Property(property: 'user', ref: '#/components/schemas/UserSummary', nullable: true),
         new OA\Property(
             property: 'checkins',
             type: 'array',
@@ -72,6 +73,9 @@ class VireeResource extends JsonResource
             ],
             'narrative' => $this->ai_narrative,
             'weather' => $this->weather_snapshot,
+            // L'auteur (identité publique) quand il est chargé — le front s'en
+            // sert pour afficher « Virée de X » et la propriété du récap.
+            'user' => new UserSummaryResource($this->whenLoaded('user')),
             'checkins' => CheckinResource::collection($checkins),
         ];
     }

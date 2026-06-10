@@ -52,6 +52,19 @@ const routes: RouteRecordRaw[] = [
     name: 'viree',
     component: () => import('@/pages/VireePage.vue'),
   },
+  {
+    // Le fil : les virées des noctambules suivis.
+    path: '/feed',
+    name: 'feed',
+    component: () => import('@/pages/FeedPage.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    // Profil public d'un noctambule.
+    path: '/u/:username',
+    name: 'user-profile',
+    component: () => import('@/pages/UserProfilePage.vue'),
+  },
 ]
 
 export const router = createRouter({

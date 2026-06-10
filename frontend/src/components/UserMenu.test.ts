@@ -77,12 +77,16 @@ describe('UserMenu', () => {
     expect(wrapper.find('[data-testid="user-menu-logout"]').exists()).toBe(true)
   })
 
-  it('pointe vers /profil et /favoris', async () => {
+  it('pointe vers /profil, le profil public et /favoris', async () => {
     const { wrapper } = mountMenu()
     await wrapper.find('[data-testid="user-menu-button"]').trigger('click')
 
     const links = wrapper.findAllComponents(RouterLinkStub)
-    expect(links.map((link) => link.props('to'))).toEqual(['/profil', '/favoris'])
+    expect(links.map((link) => link.props('to'))).toEqual([
+      '/profil',
+      '/u/arthur',
+      '/favoris',
+    ])
   })
 
   it('déconnecte puis redirige vers l’accueil', async () => {

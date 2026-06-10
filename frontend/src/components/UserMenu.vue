@@ -128,6 +128,16 @@ async function onLogout(): Promise<void> {
             Profil
           </RouterLink>
           <RouterLink
+            v-if="auth.user"
+            :to="`/u/${auth.user.username}`"
+            role="menuitem"
+            data-testid="user-menu-public-profile"
+            class="rounded-xl px-3 py-2 font-mono text-[11px] uppercase tracking-[0.18em] text-text-2 transition hover:bg-glass hover:text-text"
+            @click="close"
+          >
+            Mon profil public
+          </RouterLink>
+          <RouterLink
             to="/favoris"
             role="menuitem"
             data-testid="user-menu-favorites"

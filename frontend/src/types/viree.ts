@@ -34,5 +34,7 @@ export interface Viree {
   stats: VireeStats
   narrative: string | null
   weather: Weather | null
+  /** Auteur (identité publique), présent sur le récap partagé. */
+  user?: { id: number; username: string }
   checkins: Checkin[]
 }
