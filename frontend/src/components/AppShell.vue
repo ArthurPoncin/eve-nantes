@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import MobileNav from './MobileNav.vue'
 import ModeToggle from './ModeToggle.vue'
 import UserMenu from './UserMenu.vue'
 
@@ -24,7 +25,7 @@ const auth = useAuthStore()
         </RouterLink>
         <RouterLink
           to="/explorer"
-          class="font-mono text-[11px] uppercase tracking-[0.18em] text-text-2 transition hover:text-text"
+          class="hidden font-mono text-[11px] uppercase tracking-[0.18em] text-text-2 transition hover:text-text sm:inline"
         >
           Carte
         </RouterLink>
@@ -38,6 +39,8 @@ const auth = useAuthStore()
         <ModeToggle />
         <!-- Profil, favoris et déconnexion sont regroupés dans le menu avatar. -->
         <UserMenu v-if="auth.isAuthenticated" />
+        <!-- En mobile, Soirée et Carte passent dans le burger. -->
+        <MobileNav />
       </nav>
     </header>
     <slot />

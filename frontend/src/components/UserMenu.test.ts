@@ -16,7 +16,26 @@ vi.mock('@/api/auth', () => ({
   registerRequest: vi.fn(),
 }))
 
+vi.mock('@/api/badges', () => ({ fetchBadges: vi.fn() }))
+
+import { flushPromises } from '@vue/test-utils'
+import { fetchBadges } from '@/api/badges'
+import type { Badge } from '@/types/badge'
 import UserMenu from './UserMenu.vue'
+
+const mockedFetchBadges = vi.mocked(fetchBadges)
+
+function makeBadge(overrides: Partial<Badge> = {}): Badge {
+  return {
+    id: 'critique',
+    label: 'Critique',
+    description: 'Poster son premier avis',
+    icon: '☆',
+    unlocked: false,
+    unlocked_at: null,
+    ...overrides,
+  }
+}
 
 function mountMenu() {
   const wrapper = mount(UserMenu, {
@@ -32,6 +51,8 @@ beforeEach(() => {
   localStorage.setItem('noctambule.token', 'tok_abc')
   setActivePinia(createPinia())
   push.mockClear()
+  mockedFetchBadges.mockReset()
+  mockedFetchBadges.mockRejectedValue(new Error('non mocké'))
 })
 
 describe('UserMenu', () => {
@@ -102,5 +123,45 @@ describe('UserMenu', () => {
     await wrapper.find('[data-testid="user-menu-profile"]').trigger('click')
 
     expect(wrapper.find('[data-testid="user-menu"]').exists()).toBe(false)
+  })
+
+  it('affiche le compteur de badges débloqués à l’ouverture', async () => {
+    mockedFetchBadges.mockResolvedValue([
+      makeBadge({ id: 'critique', unlocked: true }),
+      makeBadge({ id: 'noctambule' }),
+      makeBadge({ id: 'explorateur' }),
+    ])
+    const { wrapper } = mountMenu()
+
+    expect(mockedFetchBadges).not.toHaveBeenCalled()
+
+    await wrapper.find('[data-testid="user-menu-button"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="user-menu-badges"]').text()).toContain('1/3')
+  })
+
+  it('ne recharge pas les badges aux ouvertures suivantes', async () => {
+    mockedFetchBadges.mockResolvedValue([makeBadge({ unlocked: true })])
+    const { wrapper } = mountMenu()
+    const button = wrapper.find('[data-testid="user-menu-button"]')
+
+    await button.trigger('click')
+    await flushPromises()
+    await button.trigger('click')
+    await button.trigger('click')
+    await flushPromises()
+
+    expect(mockedFetchBadges).toHaveBeenCalledTimes(1)
+  })
+
+  it('masque la ligne badges quand le chargement échoue', async () => {
+    mockedFetchBadges.mockRejectedValue(new Error('500'))
+    const { wrapper } = mountMenu()
+    await wrapper.find('[data-testid="user-menu-button"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="user-menu"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="user-menu-badges"]').exists()).toBe(false)
   })
 })

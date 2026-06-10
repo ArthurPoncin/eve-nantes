@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
+import { fetchBadges } from '@/api/badges'
 import { useAuthStore } from '@/stores/auth'
+import type { Badge } from '@/types/badge'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -10,6 +12,31 @@ const isOpen = ref(false)
 const root = ref<HTMLElement | null>(null)
 
 const initial = computed(() => auth.user?.username?.charAt(0).toUpperCase() ?? '?')
+
+// Chargés paresseusement à la première ouverture : pas d'appel API tant que
+// le menu reste fermé. En cas d'erreur la ligne badges est simplement masquée.
+const badges = ref<Badge[] | null>(null)
+const badgesRequested = ref(false)
+
+const unlockedCount = computed(
+  () => badges.value?.filter((badge) => badge.unlocked).length ?? 0,
+)
+
+function toggle(): void {
+  isOpen.value = !isOpen.value
+  if (isOpen.value && !badgesRequested.value) {
+    badgesRequested.value = true
+    void loadBadges()
+  }
+}
+
+async function loadBadges(): Promise<void> {
+  try {
+    badges.value = await fetchBadges()
+  } catch {
+    badges.value = null
+  }
+}
 
 function close(): void {
   isOpen.value = false
@@ -55,7 +82,7 @@ async function onLogout(): Promise<void> {
       :aria-expanded="isOpen"
       class="glow-violet flex h-9 w-9 items-center justify-center rounded-full bg-violet-bright font-serif text-base italic text-white transition hover:brightness-110"
       :class="isOpen ? 'ring-2 ring-violet/60 ring-offset-2 ring-offset-transparent' : ''"
-      @click="isOpen = !isOpen"
+      @click="toggle"
     >
       {{ initial }}
     </button>
@@ -79,6 +106,13 @@ async function onLogout(): Promise<void> {
             {{ auth.user?.username ?? 'Noctambule' }}
           </p>
           <p class="truncate text-xs text-text-3">{{ auth.user?.email }}</p>
+          <p
+            v-if="badges"
+            data-testid="user-menu-badges"
+            class="mt-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-gold"
+          >
+            ◆ {{ unlockedCount }}/{{ badges.length }} badges
+          </p>
         </div>
 
         <div class="mx-1 border-t border-hairline" aria-hidden="true" />
