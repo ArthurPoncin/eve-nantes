@@ -5,7 +5,9 @@ use App\Http\Controllers\BadgeController;
 use App\Http\Controllers\CheckinController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\FavoriteController;
+use App\Http\Controllers\PilierController;
 use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\StatsController;
 use App\Http\Controllers\SoireeController;
 use App\Http\Controllers\TransportController;
 use App\Http\Controllers\VenueController;
@@ -23,6 +25,8 @@ Route::prefix('v1')->group(function (): void {
     Route::get('venues/{venue}/transport', [TransportController::class, 'show']);
     // Avis publics d'un lieu (note moyenne + commentaires).
     Route::get('venues/{venue}/reviews', [ReviewController::class, 'index']);
+    // « Pilier de bar » : top check-iner du lieu sur 90 jours (cache 60 s).
+    Route::get('venues/{venue}/pilier', [PilierController::class, 'show']);
 
     // Cœur du service : compose une soirée (lieu + event + météo + narration IA).
     Route::post('soiree/generate', [SoireeController::class, 'generate']);
@@ -47,6 +51,9 @@ Route::prefix('v1')->group(function (): void {
         Route::post('venues/{venue}/reviews', [ReviewController::class, 'store']);
         // Gamification : tous les badges, débloqués ou non pour l'utilisateur.
         Route::get('badges', [BadgeController::class, 'index']);
+
+        // « Wrapped » nocturne : toutes les stats de l'utilisateur en un appel.
+        Route::get('me/stats', [StatsController::class, 'show']);
 
         // Virées façon Strava : le 1er check-in de la nuit démarre la virée.
         Route::post('venues/{venue}/checkin', [CheckinController::class, 'store']);

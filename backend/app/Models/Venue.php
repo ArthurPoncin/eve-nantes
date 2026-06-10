@@ -48,6 +48,11 @@ class Venue extends Model
         return $this->hasMany(Review::class);
     }
 
+    public function checkins(): HasMany
+    {
+        return $this->hasMany(Checkin::class);
+    }
+
     /**
      * Le prochain evenement publie a venir (le plus proche dans le temps).
      *
