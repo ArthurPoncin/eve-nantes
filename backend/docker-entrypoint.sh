@@ -4,6 +4,7 @@ set -e
 cd /var/www/html
 
 mkdir -p \
+    storage/api-docs \
     storage/app/public \
     storage/framework/cache/data \
     storage/framework/sessions \
