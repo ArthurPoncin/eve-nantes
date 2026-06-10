@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
+import { fetchKudos, giveKudos, removeKudos } from '@/api/kudos'
 import { fetchViree } from '@/api/virees'
+import { useAuthStore } from '@/stores/auth'
 import { useVireeStore } from '@/stores/viree'
+import KudosButton from '@/components/KudosButton.vue'
 import VireeMap from '@/components/VireeMap.vue'
+import VisibilityToggle from '@/components/VisibilityToggle.vue'
 import type { Viree } from '@/types/viree'
 
 const route = useRoute()
+const auth = useAuthStore()
 const vireeStore = useVireeStore()
 
 // Mêmes maps statiques que la fiche lieu (Tailwind JIT : classes littérales).
@@ -27,6 +32,17 @@ const viree = ref<Viree | null>(null)
 const isLoading = ref(true)
 const hasError = ref(false)
 const isClosing = ref(false)
+const kudosCount = ref(0)
+const hasKudoed = ref(false)
+const isTogglingKudos = ref(false)
+
+// La virée affichée est-elle la mienne ? (auteur porté par le récap)
+const isMine = computed(
+  () =>
+    auth.isAuthenticated &&
+    viree.value?.user !== undefined &&
+    viree.value.user.username === auth.user?.username,
+)
 
 // La virée affichée est-elle la mienne, encore en cours ? (bouton Terminer)
 const isMineAndActive = computed(
@@ -35,6 +51,27 @@ const isMineAndActive = computed(
     viree.value.status === 'en_cours' &&
     vireeStore.current?.public_id === viree.value.public_id,
 )
+
+async function toggleKudos(): Promise<void> {
+  if (!viree.value || isTogglingKudos.value) return
+  isTogglingKudos.value = true
+  // Optimiste, avec retour arrière si l'API refuse.
+  const before = { hasKudoed: hasKudoed.value, count: kudosCount.value }
+  hasKudoed.value = !before.hasKudoed
+  kudosCount.value = before.count + (hasKudoed.value ? 1 : -1)
+  try {
+    if (hasKudoed.value) {
+      await giveKudos(viree.value.public_id)
+    } else {
+      await removeKudos(viree.value.public_id)
+    }
+  } catch {
+    hasKudoed.value = before.hasKudoed
+    kudosCount.value = before.count
+  } finally {
+    isTogglingKudos.value = false
+  }
+}
 
 const dateLabel = computed(() => {
   if (!viree.value) return ''
@@ -94,6 +131,17 @@ onMounted(async () => {
   } finally {
     isLoading.value = false
   }
+
+  // Les « Santé ! » du récap — non bloquant, masqué si indisponible.
+  if (viree.value) {
+    try {
+      const kudos = await fetchKudos(publicId)
+      kudosCount.value = kudos.count
+      hasKudoed.value = kudos.users.some((user) => user.id === auth.user?.id)
+    } catch {
+      // Pas de kudos affichés, le récap reste lisible.
+    }
+  }
 })
 </script>
 
@@ -125,6 +173,14 @@ onMounted(async () => {
         />
         <p class="relative font-mono text-[11px] uppercase tracking-[0.22em] text-text-3">
           {{ viree.status === 'en_cours' ? 'Virée en cours' : 'Récap de nuit' }}
+          <RouterLink
+            v-if="viree.user && !isMine"
+            :to="`/u/${viree.user.username}`"
+            data-testid="viree-author"
+            class="text-text-2 transition hover:text-text"
+          >
+            · {{ viree.user.username }}
+          </RouterLink>
         </p>
         <h1
           data-testid="viree-title"
@@ -219,6 +275,21 @@ onMounted(async () => {
           </li>
         </ol>
       </section>
+
+      <!-- « Santé ! » : trinquer à la virée d'un autre noctambule -->
+      <div
+        v-if="auth.isAuthenticated && !isMine && viree.status === 'terminee'"
+        class="flex justify-center"
+      >
+        <KudosButton :count="kudosCount" :active="hasKudoed" @toggle="toggleKudos" />
+      </div>
+
+      <!-- Ma virée : choisir qui peut voir le récap -->
+      <VisibilityToggle
+        v-if="isMine && viree.status === 'terminee'"
+        :public-id="viree.public_id"
+        :is-public="viree.is_public"
+      />
 
       <!-- Ma virée encore en cours : clôture possible depuis le récap -->
       <button

@@ -43,6 +43,11 @@ vi.mock('@/api/virees', () => ({
   fetchVirees: vi.fn(),
   fetchViree: vi.fn(),
 }))
+vi.mock('@/api/kudos', () => ({
+  giveKudos: vi.fn(),
+  removeKudos: vi.fn(),
+  fetchKudos: vi.fn().mockResolvedValue({ count: 0, users: [] }),
+}))
 
 import VireePage from './VireePage.vue'
 import { fetchViree } from '@/api/virees'
