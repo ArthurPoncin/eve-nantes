@@ -29,6 +29,11 @@ jobs:
       - name: Installer les dépendances Composer
         run: composer install --no-interaction --prefer-dist --no-progress
 
+      # storage/ est entièrement gitignoré : on recrée le squelette comme le
+      # fait docker-entrypoint.sh (l5-swagger écrit dans storage/api-docs).
+      - name: Préparer les répertoires storage
+        run: mkdir -p storage/api-docs storage/framework/cache/data storage/framework/sessions storage/framework/views storage/framework/testing storage/logs bootstrap/cache
+
       - name: Tests
         run: php artisan test
         env:
