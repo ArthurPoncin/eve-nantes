@@ -27,6 +27,34 @@ class AuthTest extends TestCase
         $this->assertDatabaseHas('users', ['email' => 'arthur@example.com']);
     }
 
+    public function test_register_rejects_a_taken_username(): void
+    {
+        User::create([
+            'username' => 'arthur',
+            'email' => 'premier@example.com',
+            'password' => 'password123',
+        ]);
+
+        $this->postJson('/api/v1/auth/register', [
+            'username' => 'arthur',
+            'email' => 'second@example.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors('username');
+    }
+
+    public function test_register_rejects_a_username_unsafe_for_urls(): void
+    {
+        $this->postJson('/api/v1/auth/register', [
+            'username' => 'arthur le noctambule',
+            'email' => 'arthur@example.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors('username');
+    }
+
     public function test_login_returns_token_with_valid_credentials(): void
     {
         User::create([
