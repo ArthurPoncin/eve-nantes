@@ -154,6 +154,10 @@ class VireeController extends Controller
     )]
     public function show(Viree $viree): JsonResponse
     {
+        // Route publique à viewer optionnel : une virée privée n'est visible
+        // que de son auteur et de ses abonnés — 404 pour ne rien révéler.
+        abort_unless($viree->isVisibleTo(auth('sanctum')->user()), 404);
+
         $viree->load('checkins.venue');
 
         return response()->json(['data' => new VireeResource($viree)]);

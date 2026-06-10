@@ -59,6 +59,7 @@ class OpenApiDocumentationTest extends TestCase
         ['get', '/api/v1/users/{user}/following'],
         ['post', '/api/v1/users/{user}/follow'],
         ['delete', '/api/v1/users/{user}/follow'],
+        ['patch', '/api/v1/virees/{viree}/visibility'],
     ];
 
     public function test_la_spec_openapi_se_genere_et_documente_tous_les_endpoints(): void
@@ -100,6 +101,7 @@ class OpenApiDocumentationTest extends TestCase
             ['get', '/api/v1/users/search'],
             ['post', '/api/v1/users/{user}/follow'],
             ['delete', '/api/v1/users/{user}/follow'],
+            ['patch', '/api/v1/virees/{viree}/visibility'],
         ] as [$method, $path]) {
             $this->assertSame(
                 [['sanctum' => []]],

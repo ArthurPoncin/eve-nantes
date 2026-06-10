@@ -15,6 +15,7 @@ use App\Http\Controllers\TransportController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VenueController;
 use App\Http\Controllers\VireeController;
+use App\Http\Controllers\VireePrivacyController;
 use App\Http\Controllers\WeatherController;
 use Illuminate\Support\Facades\Route;
 
@@ -66,6 +67,8 @@ Route::prefix('v1')->group(function (): void {
         Route::get('virees/current', [VireeController::class, 'current']);
         Route::post('virees/current/close', [VireeController::class, 'close']);
         Route::get('virees', [VireeController::class, 'index']);
+        // Visibilité d'un récap : publique (défaut) ou réservée aux abonnés.
+        Route::patch('virees/{viree:public_id}/visibility', [VireePrivacyController::class, 'update']);
 
         // Social : recherche (déclarée avant users/{user:username}) et suivi.
         // Throttles anti-énumération et anti-spam de follow.
