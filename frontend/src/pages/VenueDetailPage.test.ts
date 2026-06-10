@@ -38,6 +38,10 @@ vi.mock('@/api/favorites', () => ({
 vi.mock('@/api/transport', () => ({
   fetchVenueTransport: vi.fn().mockResolvedValue({ stop: null, departures: [] }),
 }))
+vi.mock('@/api/reviews', () => ({
+  fetchVenueReviews: vi.fn().mockResolvedValue({ average: null, count: 0, reviews: [] }),
+  postVenueReview: vi.fn(),
+}))
 
 import VenueDetailPage from './VenueDetailPage.vue'
 import { fetchVenue } from '@/api/venues'

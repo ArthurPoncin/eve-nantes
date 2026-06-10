@@ -5,6 +5,7 @@ import { fetchVenue } from '@/api/venues'
 import { useAuthStore } from '@/stores/auth'
 import { useFavoritesStore } from '@/stores/favorites'
 import FavoriteButton from '@/components/FavoriteButton.vue'
+import ReviewsSection from '@/components/ReviewsSection.vue'
 import TransportWidget from '@/components/TransportWidget.vue'
 import WeatherWidget from '@/components/WeatherWidget.vue'
 import VenueMap from '@/components/VenueMap.vue'
@@ -376,6 +377,9 @@ onMounted(() => {
           </div>
         </div>
       </section>
+
+      <!-- Avis de la communauté (note moyenne + commentaires) -->
+      <ReviewsSection :slug="venue.slug" />
 
       <span v-if="shareCopied" aria-live="polite" class="sr-only">Lien copié</span>
     </template>

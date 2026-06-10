@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import BadgeGrid from '@/components/BadgeGrid.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
@@ -72,6 +73,11 @@ async function onLogout(): Promise<void> {
           <dd data-testid="profile-email" class="text-text">{{ auth.user?.email }}</dd>
         </div>
       </dl>
+
+      <!-- Gamification : badges débloqués au fil des soirées et des avis -->
+      <div class="relative mt-8">
+        <BadgeGrid />
+      </div>
 
       <button
         type="button"

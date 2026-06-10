@@ -68,11 +68,12 @@ class BadgeService
             'distinct_venues' => $user->soirees()->distinct()->count('venue_id') >= $min,
             // 3 ambiances différentes vécues
             'distinct_moods' => $user->soirees()->distinct()->count('mood') >= $min,
-            // 3 soirées au même lieu
+            // 3 soirées au même lieu — havingRaw : PostgreSQL n'accepte pas
+            // un alias de SELECT dans le HAVING (sqlite si).
             'same_venue' => $user->soirees()
-                ->selectRaw('venue_id, count(*) as visits')
+                ->select('venue_id')
                 ->groupBy('venue_id')
-                ->having('visits', '>=', $min)
+                ->havingRaw('count(*) >= ?', [$min])
                 ->exists(),
             // Premier avis posté
             'reviews_count' => $user->reviews()->count() >= $min,
